@@ -421,7 +421,7 @@ def SetupBuildEnvironment(env):
 
     opt_level = env['OPT']
     if opt_level == 'production':
-        env.Append(CCFLAGS = '-O3')
+        env.Append(CCFLAGS = '-g -O3')
         env['TOP'] = '#build/production'
     elif opt_level == 'debug':
         env.Append(CCFLAGS = ['-g', '-O0', '-DDEBUG'])
