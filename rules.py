@@ -15,7 +15,13 @@ def RunUnitTest(env, target, source):
     import subprocess
     test = str(source[0].abspath)
     logfile = open(target[0].abspath, 'w')
-    cmd = [test]
+    #    env['_venv'] = {target: venv}
+    tgt = target[0].name
+    if '_venv' in  env and tgt in env['_venv'] and env['_venv'][tgt]:
+        cmd = ['/bin/bash', '-c', 'source %s/bin/activate && %s' % (
+                env[env['_venv'][tgt]]._path, test)]
+    else:
+        cmd = [test]
     ShEnv = {env['ENV_SHLIB_PATH']: 'build/lib',
              'HEAPCHECK': 'normal',
              'PPROF_PATH': 'build/bin/pprof',
@@ -40,12 +46,47 @@ def TestSuite(env, target, source):
         env.Alias(target, cmd)
     return target
 
-def PyTestSuite(env, target, source):
+def setup_venv(env, target, venv_name, path=None):
+    p = path or env.Dir(env['TOP']).abspath
+    for t, v in zip (target, venv_name):
+        cmd = env.Command (v, '', 'cd %s && virtualenv %s' % (p, v))
+        env.Alias (t, cmd)
+        cmd._path = '/'.join ([p, v])
+        env[t] = cmd
+    return target
+
+def venv_add_pip_pkg(env, v, pkg):
+    venv = env[v[0]]
+    cmd = env.Command('pip', '', 'source %s/bin/activate; pip install %s' % (
+              venv._path, ' '.join(pkg)))
+    env.AlwaysBuild(cmd)
+    env.Depends(cmd, venv)
+    return cmd
+
+def venv_add_build_pkg(env, v, pkg):
+    cmd = []
+    venv = env[v[0]]
+    for p in pkg:
+        t = 'build-' + os.path.basename (p)
+        cmd += env.Command (t, '',
+       'source %s/bin/activate; pushd %s && python setup.py install; popd' % (
+              venv._path, p))
+    env.AlwaysBuild(cmd)
+    env.Depends(cmd, venv)
+    return cmd
+
+def PyTestSuite(env, target, source, venv=None):
     for test in source:
         log = test + '.log'
         cmd = env.Command(log, test, RunUnitTest)
         env.AlwaysBuild(cmd)
         env.Alias(target, cmd)
+        if venv:
+            env.Depends(cmd, venv)
+            try:
+                env['_venv'][log] = venv[0]
+            except KeyError:
+                env['_venv'] = {log: venv[0]}
     return target
 
 def UnitTest(env, name, sources):
@@ -441,6 +482,10 @@ def SetupBuildEnvironment(env):
     env.Append(BUILDERS = {'UnitTest': UnitTest})
     env.Append(BUILDERS = {'GenerateBuildInfoCode': GenerateBuildInfoCode})
     env.Append(BUILDERS = {'GenerateBuildInfoPyCode': GenerateBuildInfoPyCode})
+
+    env.Append(BUILDERS = {'setup_venv': setup_venv})
+    env.Append(BUILDERS = {'venv_add_pip_pkg': venv_add_pip_pkg })
+    env.Append(BUILDERS = {'venv_add_build_pkg': venv_add_build_pkg })
 
     env.AddMethod(ExtractCppFunc, "ExtractCpp")
     env.AddMethod(ExtractCFunc, "ExtractC")
