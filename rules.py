@@ -10,6 +10,7 @@ import json
 import SCons.Util
 import subprocess
 import sys
+import time
 
 def RunUnitTest(env, target, source):
     import subprocess
@@ -27,7 +28,21 @@ def RunUnitTest(env, target, source):
              'PPROF_PATH': 'build/bin/pprof',
              'DB_ITERATION_TO_YIELD': '1',
              'PATH': os.environ['PATH']}
-    code = subprocess.call(cmd, stdout=logfile, stderr=logfile, env=ShEnv)
+    proc = subprocess.Popen(cmd, stdout=logfile, stderr=logfile, env=ShEnv)
+
+    # 60 second timeout
+    for i in range(60):
+        code = proc.poll()
+        if not code is None:
+            break
+        time.sleep(1)
+
+    if code is None:
+        proc.kill()
+        logfile.write('[  TIMEOUT  ] ')
+        print test + '\033[91m' + " TIMEOUT" + '\033[0m'
+        return
+
     if code == 0:
         print test + '\033[94m' + " PASS" + '\033[0m'
     else:
