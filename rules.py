@@ -63,17 +63,29 @@ def TestSuite(env, target, source):
 
 def setup_venv(env, target, venv_name, path=None):
     p = path or env.Dir(env['TOP']).abspath
-    for t, v in zip (target, venv_name):
+    for t, v in zip(target, venv_name):
         cmd = env.Command (v, '', 'cd %s && virtualenv %s' % (p, v))
         env.Alias (t, cmd)
         cmd._path = '/'.join ([p, v])
         env[t] = cmd
     return target
 
-def venv_add_pip_pkg(env, v, pkg):
+def venv_add_pip_pkg(env, v, pkg_list):
     venv = env[v[0]]
-    cmd = env.Command('pip', '', 'source %s/bin/activate; pip install %s' % (
-              venv._path, ' '.join(pkg)))
+
+    # pkg_list can contain absolute filenames or a pip package and version.
+    targets = []
+    for pkg in pkg_list:
+        result = pkg.split('==')
+        if result:
+            name = result[0]
+        else:
+            name = pkg
+        if name[0] != '/':
+            targets.append(name)
+
+    cmd = env.Command(targets, None, 'source %s/bin/activate; pip install %s' %
+                      (venv._path, ' '.join(pkg_list)))
     env.AlwaysBuild(cmd)
     env.Depends(cmd, venv)
     return cmd
