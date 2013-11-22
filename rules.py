@@ -368,13 +368,13 @@ def SandeshPyBuilder(target, source, env):
     opath = str(target[0]).rsplit('/',1)[0] 
     py_opath = opath.rsplit('/',1)[0] + '/'
     sandeshcmd = env.Dir(env['TOP_BIN']).abspath + '/sandesh'
-    code = subprocess.call(sandeshcmd + ' --gen py:new_style -I controller/src/ -out ' + \
+    code = subprocess.call(sandeshcmd + ' --gen py:new_style -I controller/src/ -I tools -out ' + \
         py_opath + " " + str(source[0]), shell=True)
     if code != 0:
         raise SCons.Errors.StopError(SandeshCodeGeneratorError, 
                                      'Sandesh Compiler Failed')
     html_opath = opath + '/'
-    code = subprocess.call(sandeshcmd + ' --gen html -I controller/src/ -out ' + \
+    code = subprocess.call(sandeshcmd + ' --gen html -I controller/src/ -I tools -out ' + \
         html_opath + " " + str(source[0]), shell=True)
     if code != 0:
         raise SCons.Errors.StopError(SandeshCodeGeneratorError, 
