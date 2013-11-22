@@ -309,7 +309,7 @@ def SandeshCppBuilder(target, source, env):
     opath = str(target[0]).rsplit('/',1)[0] + "/"
     sname = str(target[0]).rsplit('/',1)[1].rsplit('_',1)[0]
     sandeshcmd = env.Dir(env['TOP_BIN']).abspath + '/sandesh'
-    code = subprocess.call(sandeshcmd + ' --gen cpp --gen html -I controller/src/ -out '
+    code = subprocess.call(sandeshcmd + ' --gen cpp --gen html -I controller/src/ -I tools -out '
                            + opath + " " + str(source[0]), shell=True)
     if code != 0:
         raise SCons.Errors.StopError(SandeshCodeGeneratorError, 
@@ -384,7 +384,7 @@ def SandeshSconsEnvPyFunc(env):
     pybuild = Builder(action = SandeshPyBuilder)
     env.Append(BUILDERS = {'SandeshPy' : pybuild})
 
-def SandeshGenPyFunc(env, path, target=''):
+def SandeshGenPyFunc(env, path, target='', gen_py=True):
     SandeshSconsEnvPyFunc(env)
     modules = [
         '__init__.py',
@@ -397,7 +397,12 @@ def SandeshGenPyFunc(env, path, target=''):
         mod_dir = path_split[1] + '/'
     else:
         mod_dir = path_split[0] + '/'
-    targets = map(lambda module: target + 'gen_py/' + mod_dir + module, modules)
+    if gen_py:
+        targets = map(lambda module: target + 'gen_py/' + mod_dir + module,
+                      modules)
+    else:
+        targets = map(lambda module: target + mod_dir + module, modules)
+
     env.Depends(targets, '#/build/bin/sandesh')
     return env.SandeshPy(targets, path)
 
