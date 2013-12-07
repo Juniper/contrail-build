@@ -12,7 +12,7 @@ import subprocess
 import sys
 import time
 
-def RunUnitTest(env, target, source):
+def RunUnitTest(env, target, source, timeout = 60):
     import subprocess
     test = str(source[0].abspath)
     logfile = open(target[0].abspath, 'w')
@@ -31,7 +31,7 @@ def RunUnitTest(env, target, source):
     proc = subprocess.Popen(cmd, stdout=logfile, stderr=logfile, env=ShEnv)
 
     # 60 second timeout
-    for i in range(60):
+    for i in range(timeout):
         code = proc.poll()
         if not code is None:
             break
@@ -63,8 +63,18 @@ def TestSuite(env, target, source):
 
 def setup_venv(env, target, venv_name, path=None):
     p = path or env.Dir(env['TOP']).abspath
+    shell_cmd = ' && '.join ([
+        'cd %s' % p,
+        '[ -f ez_setup-0.9.tar.gz ] || curl -o ez_setup-0.9.tar.gz https://pypi.python.org/packages/source/e/ez_setup/ez_setup-0.9.tar.gz',
+        '[ -f Python-2.7.tar.bz2 ] || curl -o Python-2.7.tar.bz2 http://www.python.org/ftp/python/2.7/Python-2.7.tar.bz2',
+        '[ -d Python-2.7 ] || tar xjvf Python-2.7.tar.bz2',
+        '[ -d python2.7 ] || ( cd Python-2.7 && ./configure --prefix=%s/python2.7 && make install ) && ( cd ez_setup-0.9 && ../python2.7/bin/python setup.py install)' % p,
+        '[ -f virtualenv-1.10.1.tar.gz ] || curl -o virtualenv-1.10.1.tar.gz https://pypi.python.org/packages/source/v/virtualenv/virtualenv-1.10.1.tar.gz',
+        '[ -d virtualenv-1.10.1 ] || tar xzvf virtualenv-1.10.1.tar.gz',
+        'python2.7/bin/python virtualenv-1.10.1/virtualenv.py --python=python2.7/bin/python %s',
+    ])
     for t, v in zip(target, venv_name):
-        cmd = env.Command (v, '', 'cd %s && virtualenv %s' % (p, v))
+        cmd = env.Command (v, '', shell_cmd % (v,))
         env.Alias (t, cmd)
         cmd._path = '/'.join ([p, v])
         env[t] = cmd
@@ -467,6 +477,19 @@ def CreateTypeBuilder(env):
                       emitter = TypeTargetGen)
     env.Append(BUILDERS = { 'TypeAutogen' : builder})
 
+def PyTestSuiteCov(target, source, env):
+    for test in source:
+        log = test.name + '.log'
+        if env['env_venv']:
+            venv = env['env_venv']
+            try:
+                env['_venv'][log] = venv[0]
+            except KeyError:
+                env['_venv'] = {log: venv[0]}
+        logfile = test.path + '.log'
+        RunUnitTest(env, [env.File(logfile)], [env.File(test)], 300)
+    return None
+
 def SetupBuildEnvironment(env):
     AddOption('--optimization', dest = 'opt',
               action='store', default='debug',
@@ -529,4 +552,6 @@ def SetupBuildEnvironment(env):
     env.AddMethod(ThriftGenCppFunc, "ThriftGenCpp")
     CreateIFMapBuilder(env)
     CreateTypeBuilder(env)
+    PyTestSuiteCovBuilder = Builder(action = PyTestSuiteCov)
+    env.Append(BUILDERS = {'PyTestSuiteCov' : PyTestSuiteCovBuilder})
 # SetupBuildEnvironment
