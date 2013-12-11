@@ -11,8 +11,11 @@ import SCons.Util
 import subprocess
 import sys
 import time
+import commands
 
 def RunUnitTest(env, target, source, timeout = 60):
+    if env['ENV'].has_key('BUILD_ONLY'):
+        return
     import subprocess
     test = str(source[0].abspath)
     logfile = open(target[0].abspath, 'w')
@@ -477,6 +480,19 @@ def CreateTypeBuilder(env):
                       emitter = TypeTargetGen)
     env.Append(BUILDERS = { 'TypeAutogen' : builder})
 
+# Check for unsupported/buggy compilers.
+def CheckBuildConfiguration(conf):
+
+    # gcc 4.7.0 generates buggy code when optimization is turned on.
+    opt_level = GetOption('opt')
+    if ((opt_level == 'production' or opt_level == 'profile') and \
+        (conf.env['CC'].endswith("gcc") or conf.env['CC'].endswith("g++"))):
+        if commands.getoutput(conf.env['CC'] + ' -dumpversion') == "4.7.0":
+            print "Unsupported/Buggy compiler gcc 4.7.0 for building " + \
+                  "optimized binaries"
+            exit(1)
+    return conf.Finish()
+
 def PyTestSuiteCov(target, source, env):
     for test in source:
         log = test.name + '.log'
@@ -490,7 +506,7 @@ def PyTestSuiteCov(target, source, env):
         RunUnitTest(env, [env.File(logfile)], [env.File(test)], 300)
     return None
 
-def SetupBuildEnvironment(env):
+def SetupBuildEnvironment(conf):
     AddOption('--optimization', dest = 'opt',
               action='store', default='debug',
               choices = ['debug', 'production', 'coverage', 'profile'],
@@ -499,6 +515,8 @@ def SetupBuildEnvironment(env):
     AddOption('--target', dest = 'target',
               action='store',
               choices = ['i686', 'x86_64'])
+
+    env = CheckBuildConfiguration(conf)
 
     env['OPT'] = GetOption('opt')
     env['TARGET_MACHINE'] = GetOption('target')
@@ -552,6 +570,9 @@ def SetupBuildEnvironment(env):
     env.AddMethod(ThriftGenCppFunc, "ThriftGenCpp")
     CreateIFMapBuilder(env)
     CreateTypeBuilder(env)
+
     PyTestSuiteCovBuilder = Builder(action = PyTestSuiteCov)
     env.Append(BUILDERS = {'PyTestSuiteCov' : PyTestSuiteCovBuilder})
+
+    return env
 # SetupBuildEnvironment
