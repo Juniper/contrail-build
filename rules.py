@@ -507,8 +507,16 @@ def PyTestSuiteCov(target, source, env):
     return None
 
 def PlatformDarwin(env):
+    ver = subprocess.check_output("sw_vers | \grep ProductVersion | cut -f 2", shell=True).rstrip('\n')
+
+    if float(ver) >= 10.9:
+        return
+
     if not 'SDKROOT' in env['ENV']:
-        env['ENV']['SDKROOT'] = '/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.7.sdk'
+
+        # Find Mac SDK version.
+        sdk = '/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX' + ver + '.sdk'
+        env['ENV']['SDKROOT'] = sdk
 
     if not 'DEVELOPER_BIN_DIR' in env['ENV']:
         env['ENV']['DEVELOPER_BIN_DIR'] = '/Applications/Xcode.app/Contents/Developer/usr/bin'
