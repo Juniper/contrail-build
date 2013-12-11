@@ -506,6 +506,28 @@ def PyTestSuiteCov(target, source, env):
         RunUnitTest(env, [env.File(logfile)], [env.File(test)], 300)
     return None
 
+def PlatformDarwin(env):
+    if not 'SDKROOT' in env['ENV']:
+        env['ENV']['SDKROOT'] = '/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.7.sdk'
+
+    if not 'DEVELOPER_BIN_DIR' in env['ENV']:
+        env['ENV']['DEVELOPER_BIN_DIR'] = '/Applications/Xcode.app/Contents/Developer/usr/bin'
+
+    env.AppendENVPath('PATH', env['ENV']['DEVELOPER_BIN_DIR'])
+
+    if not 'DT_TOOLCHAIN_DIR' in env['ENV']:
+        env['ENV']['DT_TOOLCHAIN_DIR'] = '/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain'
+
+    env.AppendENVPath('PATH', env['ENV']['DT_TOOLCHAIN_DIR'] + '/usr/bin')
+
+    env['CXX'] = 'clang++'
+    env.Append(CPPPATH = [env['ENV']['SDKROOT'] + '/usr/include',
+#                         env['ENV']['SDKROOT'] + '/usr/include/c++/v1',
+                          env['ENV']['SDKROOT'] + '/usr/include/c++/4.2.1',
+                          ])
+#   env.Append(LIBPATH = env['ENV']['SDKROOT'] + '/usr/lib')
+#   env.Append(LIBS = 'c++.1')
+
 def SetupBuildEnvironment(conf):
     AddOption('--optimization', dest = 'opt',
               action='store', default='debug',
@@ -522,6 +544,7 @@ def SetupBuildEnvironment(conf):
     env['TARGET_MACHINE'] = GetOption('target')
 
     if sys.platform == 'darwin':
+        PlatformDarwin(env)
         env['ENV_SHLIB_PATH'] = 'DYLD_LIBRARY_PATH'
     else:
         env['ENV_SHLIB_PATH'] = 'LD_LIBRARY_PATH'
