@@ -507,8 +507,8 @@ def PyTestSuiteCov(target, source, env):
     return None
 
 def PlatformDarwin(env):
-    ver = subprocess.check_output("sw_vers | \grep ProductVersion | cut -f 2", shell=True).rstrip('\n')
-
+    ver = subprocess.check_output("sw_vers | \grep ProductVersion", shell=True).rstrip('\n')
+    ver = re.match(r'ProductVersion:\s+(\d+\.\d+)', ver).group(1)
     if float(ver) >= 10.9:
         return
 
