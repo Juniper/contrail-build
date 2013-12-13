@@ -11,8 +11,11 @@ import SCons.Util
 import subprocess
 import sys
 import time
+import commands
 
 def RunUnitTest(env, target, source, timeout = 60):
+    if env['ENV'].has_key('BUILD_ONLY'):
+        return
     import subprocess
     test = str(source[0].abspath)
     logfile = open(target[0].abspath, 'w')
@@ -477,6 +480,19 @@ def CreateTypeBuilder(env):
                       emitter = TypeTargetGen)
     env.Append(BUILDERS = { 'TypeAutogen' : builder})
 
+# Check for unsupported/buggy compilers.
+def CheckBuildConfiguration(conf):
+
+    # gcc 4.7.0 generates buggy code when optimization is turned on.
+    opt_level = GetOption('opt')
+    if ((opt_level == 'production' or opt_level == 'profile') and \
+        (conf.env['CC'].endswith("gcc") or conf.env['CC'].endswith("g++"))):
+        if commands.getoutput(conf.env['CC'] + ' -dumpversion') == "4.7.0":
+            print "Unsupported/Buggy compiler gcc 4.7.0 for building " + \
+                  "optimized binaries"
+            exit(1)
+    return conf.Finish()
+
 def PyTestSuiteCov(target, source, env):
     for test in source:
         log = test.name + '.log'
@@ -490,7 +506,37 @@ def PyTestSuiteCov(target, source, env):
         RunUnitTest(env, [env.File(logfile)], [env.File(test)], 300)
     return None
 
-def SetupBuildEnvironment(env):
+def PlatformDarwin(env):
+    ver = subprocess.check_output("sw_vers | \grep ProductVersion", shell=True).rstrip('\n')
+    ver = re.match(r'ProductVersion:\s+(\d+\.\d+)', ver).group(1)
+    if float(ver) >= 10.9:
+        return
+
+    if not 'SDKROOT' in env['ENV']:
+
+        # Find Mac SDK version.
+        sdk = '/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX' + ver + '.sdk'
+        env['ENV']['SDKROOT'] = sdk
+
+    if not 'DEVELOPER_BIN_DIR' in env['ENV']:
+        env['ENV']['DEVELOPER_BIN_DIR'] = '/Applications/Xcode.app/Contents/Developer/usr/bin'
+
+    env.AppendENVPath('PATH', env['ENV']['DEVELOPER_BIN_DIR'])
+
+    if not 'DT_TOOLCHAIN_DIR' in env['ENV']:
+        env['ENV']['DT_TOOLCHAIN_DIR'] = '/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain'
+
+    env.AppendENVPath('PATH', env['ENV']['DT_TOOLCHAIN_DIR'] + '/usr/bin')
+
+    env['CXX'] = 'clang++'
+    env.Append(CPPPATH = [env['ENV']['SDKROOT'] + '/usr/include',
+#                         env['ENV']['SDKROOT'] + '/usr/include/c++/v1',
+                          env['ENV']['SDKROOT'] + '/usr/include/c++/4.2.1',
+                          ])
+#   env.Append(LIBPATH = env['ENV']['SDKROOT'] + '/usr/lib')
+#   env.Append(LIBS = 'c++.1')
+
+def SetupBuildEnvironment(conf):
     AddOption('--optimization', dest = 'opt',
               action='store', default='debug',
               choices = ['debug', 'production', 'coverage', 'profile'],
@@ -500,10 +546,13 @@ def SetupBuildEnvironment(env):
               action='store',
               choices = ['i686', 'x86_64'])
 
+    env = CheckBuildConfiguration(conf)
+
     env['OPT'] = GetOption('opt')
     env['TARGET_MACHINE'] = GetOption('target')
 
     if sys.platform == 'darwin':
+        PlatformDarwin(env)
         env['ENV_SHLIB_PATH'] = 'DYLD_LIBRARY_PATH'
     else:
         env['ENV_SHLIB_PATH'] = 'LD_LIBRARY_PATH'
@@ -552,6 +601,9 @@ def SetupBuildEnvironment(env):
     env.AddMethod(ThriftGenCppFunc, "ThriftGenCpp")
     CreateIFMapBuilder(env)
     CreateTypeBuilder(env)
+
     PyTestSuiteCovBuilder = Builder(action = PyTestSuiteCov)
     env.Append(BUILDERS = {'PyTestSuiteCov' : PyTestSuiteCovBuilder})
+
+    return env
 # SetupBuildEnvironment
