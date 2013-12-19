@@ -139,7 +139,7 @@ def UnitTest(env, name, sources):
 def GenerateBuildInfoCode(env, target, source, path):
     if not os.path.isdir(path):
         os.makedirs(path)
-    env.Command(target=target, source=source, action=BuildInfoAction, chdir = path)
+    env.Command(target=target, source=source, action=BuildInfoAction, chdir=path)
     return
 
 def BuildInfoAction(env, target, source):
