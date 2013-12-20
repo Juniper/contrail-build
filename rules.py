@@ -139,7 +139,10 @@ def UnitTest(env, name, sources):
 def GenerateBuildInfoCode(env, target, source, path):
     if not os.path.isdir(path):
         os.makedirs(path)
+    env.Command(target=target, source=source, action=BuildInfoAction, chdir=path)
+    return
 
+def BuildInfoAction(env, target, source):
     try:
         build_user = os.environ['USER']
     except KeyError:
@@ -196,11 +199,11 @@ extern const std::string BuildInfo;
 const std::string BuildInfo = "%(json)s";
 """ % { 'json': jsdata.replace('"', "\\\"") }
 
-    h_file = file(path + '/buildinfo.h', 'w')
+    h_file = file('buildinfo.h', 'w')
     h_file.write(h_code)
     h_file.close()
 
-    cc_file = file(path + '/buildinfo.cc', 'w')
+    cc_file = file('buildinfo.cc', 'w')
     cc_file.write(cc_code)
     cc_file.close()
     return 
