@@ -14,3 +14,6 @@ conf = Configure(DefaultEnvironment(ENV = os.environ))
 env = rules.SetupBuildEnvironment(conf)
 
 SConscript(dirs=['controller', 'vrouter', 'tools/sandesh'])
+
+SConscript('openstack/nova_contrail_vif/SConscript',
+           variant_dir='build/noarch/nova_contrail_vif')
