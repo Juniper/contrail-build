@@ -450,6 +450,38 @@ def ThriftGenCppFunc(env, file, async):
     env.Depends(targets, '#/build/bin/thrift')
     return env.ThriftCpp(targets, file)
 
+def ThriftPyBuilder(target, source, env):
+    opath = str(target[0]).rsplit('/',1)[0] 
+    py_opath = opath.rsplit('/',1)[0] + '/'
+    thriftcmd = env.Dir(env['TOP_BIN']).abspath + '/thrift'
+    code = subprocess.call(thriftcmd + ' --gen py:new_style -I src/ -out ' +
+                           py_opath + " " + str(source[0]), shell=True)
+    if code:
+        raise SCons.Errors.StopError(ThriftCodeGeneratorError, 
+                                     'Thrift Compiler Failed')
+#end ThirftPyBuilder
+
+def ThriftSconsEnvPyFunc(env):
+    pybuild = Builder(action = ThriftPyBuilder)
+    env.Append(BUILDERS = {'ThriftPy' : pybuild})
+
+def ThriftGenPyFunc(env, path, target=''):
+    modules = [
+        '__init__.py',
+        'constants.py',
+        'ttypes.py']
+    basename = Basename(path)
+    path_split = basename.rsplit('/', 1)
+    if len(path_split) == 2:
+        mod_dir = path_split[1] + '/'
+    else:
+        mod_dir = path_split[0] + '/'
+    if target[-1] != '/':
+        target += '/'
+    targets = map(lambda module: target + 'gen_py/' + mod_dir + module, modules)
+    env.Depends(targets, '#/build/bin/thrift')
+    return env.ThriftPy(targets, path)
+
 def IFMapBuilderCmd(source, target, env, for_signature):
     output = Basename(source[0].abspath)
     return './tools/generateds/generateDS.py -f -g ifmap-backend -o %s %s' % (output, source[0])
@@ -602,6 +634,8 @@ def SetupBuildEnvironment(conf):
     env.AddMethod(SandeshGenCFunc, "SandeshGenC")
     env.AddMethod(SandeshGenPyFunc, "SandeshGenPy")
     env.AddMethod(ThriftGenCppFunc, "ThriftGenCpp")
+    ThriftSconsEnvPyFunc(env)
+    env.AddMethod(ThriftGenPyFunc, "ThriftGenPy")
     CreateIFMapBuilder(env)
     CreateTypeBuilder(env)
 
