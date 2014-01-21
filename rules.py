@@ -176,7 +176,7 @@ def BuildInfoAction(env, target, source):
         'build-hostname': build_host,
         'build-git-ver': build_git_info
     }
-    jsdata = json.dumps({'build-info': info})
+    jsdata = json.dumps({'build-info': [info]})
 
     h_code = """
 /*
