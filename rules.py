@@ -26,11 +26,21 @@ def RunUnitTest(env, target, source, timeout = 60):
                 env[env['_venv'][tgt]]._path, test)]
     else:
         cmd = [test]
+
     ShEnv = {env['ENV_SHLIB_PATH']: 'build/lib',
-#            'HEAPCHECK': 'normal',
-#            'PPROF_PATH': 'build/bin/pprof',
              'DB_ITERATION_TO_YIELD': '1',
              'PATH': os.environ['PATH']}
+    heap_check = False
+    try:
+        # Skip HEAPCHECK in CentOS 6.4
+        subprocess.check_call("grep -q \"CentOS release 6.4\" /etc/issue 2>/dev/null", Shell=True)
+    except:
+        heap_check = True
+
+    if heap_check or env['ENV'].has_key('HEAPCHECK'):
+        ShEnv['HEAPCHECK'] = 'normal'
+        ShEnv['PPROF'] = 'build/bin/pprof'
+
     proc = subprocess.Popen(cmd, stdout=logfile, stderr=logfile, env=ShEnv)
 
     # 60 second timeout
