@@ -27,8 +27,8 @@ def RunUnitTest(env, target, source, timeout = 60):
     else:
         cmd = [test]
     ShEnv = {env['ENV_SHLIB_PATH']: 'build/lib',
-             'HEAPCHECK': 'normal',
-             'PPROF_PATH': 'build/bin/pprof',
+#            'HEAPCHECK': 'normal',
+#            'PPROF_PATH': 'build/bin/pprof',
              'DB_ITERATION_TO_YIELD': '1',
              'PATH': os.environ['PATH']}
     proc = subprocess.Popen(cmd, stdout=logfile, stderr=logfile, env=ShEnv)
