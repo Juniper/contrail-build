@@ -33,7 +33,7 @@ def RunUnitTest(env, target, source, timeout = 60):
     heap_check = False
     try:
         # Skip HEAPCHECK in CentOS 6.4
-        subprocess.check_call("grep -q \"CentOS release 6.4\" /etc/issue 2>/dev/null", Shell=True)
+        subprocess.check_call("grep -q \"CentOS release 6.4\" /etc/issue 2>/dev/null", shell=True)
     except:
         heap_check = True
 
