@@ -30,12 +30,13 @@ def RunUnitTest(env, target, source, timeout = 60):
     ShEnv = {env['ENV_SHLIB_PATH']: 'build/lib',
              'DB_ITERATION_TO_YIELD': '1',
              'PATH': os.environ['PATH']}
-    heap_check = False
+    heap_check = True
     try:
         # Skip HEAPCHECK in CentOS 6.4
         subprocess.check_call("grep -q \"CentOS release 6.4\" /etc/issue 2>/dev/null", shell=True)
+        heap_check = False
     except:
-        heap_check = True
+        pass
 
     if heap_check or env['ENV'].has_key('HEAPCHECK'):
         ShEnv['HEAPCHECK'] = 'normal'
