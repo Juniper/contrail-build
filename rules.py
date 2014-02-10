@@ -157,9 +157,12 @@ def BuildInfoAction(env, target, source):
     import datetime
     build_time = unicode(datetime.datetime.utcnow())
 
+    repo_path = env.Dir('#').abspath + '/controller'
+    
     # Fetch git version
-    p = subprocess.Popen('git log --oneline | head -1 | awk \'{ print $1 }\'',
-                         stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell='True')
+    cmd = 'cd ' + repo_path + '; git log --oneline | head -1 | awk \'{ print $1 }\''
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, 
+                         shell='True')
     build_git_info, err = p.communicate()
     build_git_info = build_git_info.strip()
 
