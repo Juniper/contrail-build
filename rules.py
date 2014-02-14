@@ -13,6 +13,11 @@ import sys
 import time
 import commands
 
+def getDistribution():
+    distribution = subprocess.check_output('lsb_release -is', shell=True)
+    return distribution.rstrip(os.linesep)
+
+
 def RunUnitTest(env, target, source, timeout = 60):
     if env['ENV'].has_key('BUILD_ONLY'):
         return
@@ -595,10 +600,45 @@ def SetupBuildEnvironment(conf):
               action='store',
               choices = ['i686', 'x86_64'])
 
+    AddOption('--root', dest = 'install_root', action='store')
+    AddOption('--prefix', dest = 'install_prefix', action='store')
+
     env = CheckBuildConfiguration(conf)
 
     env['OPT'] = GetOption('opt')
     env['TARGET_MACHINE'] = GetOption('target')
+    env['INSTALL_PREFIX'] = GetOption('install_prefix')
+    env['INSTALL_BIN'] = ''
+    env['INSTALL_LIB'] = ''
+    env['INSTALL_CONF'] = ''
+    env['PYTHON_INSTALL_OPT'] = ''
+
+    install_root = GetOption('install_root')
+    if install_root:
+        env['INSTALL_BIN'] = install_root
+        env['INSTALL_LIB'] = install_root
+        env['INSTALL_CONF'] = install_root
+        env['PYTHON_INSTALL_OPT'] = '--root ' + install_root + ' '
+
+    install_prefix = GetOption('install_prefix')
+    if install_prefix:
+        env['INSTALL_BIN'] += install_prefix
+        env['INSTALL_LIB'] += install_prefix
+        env['PYTHON_INSTALL_OPT'] += '--prefix ' + install_prefix + ' '
+    elif install_root:
+        env['INSTALL_BIN'] += '/usr'
+        env['INSTALL_LIB'] += '/usr'
+        env['PYTHON_INSTALL_OPT'] += '--prefix /usr '
+    else:
+        env['INSTALL_BIN'] += '/usr/local'
+
+    env['INSTALL_BIN'] += '/bin'
+    env['INSTALL_LIB'] += '/lib'
+    env['INSTALL_CONF'] += '/etc/contrail'
+
+    distribution = getDistribution()
+    if distribution == "Ubuntu":
+        env['PYTHON_INSTALL_OPT'] += '--install-layout=deb '
 
     if sys.platform == 'darwin':
         PlatformDarwin(env)
