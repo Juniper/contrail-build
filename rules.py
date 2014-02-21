@@ -80,7 +80,7 @@ def setup_venv(env, target, venv_name, path=None):
     shell_cmd = ' && '.join ([
         'cd %s' % p,
         '[ -f ez_setup-0.9.tar.gz ] || curl -o ez_setup-0.9.tar.gz https://pypi.python.org/packages/source/e/ez_setup/ez_setup-0.9.tar.gz',
-        '[ -f Python-2.7.tar.bz2 ] || curl -o Python-2.7.tar.bz2 http://www.python.org/ftp/python/2.7/Python-2.7.tar.bz2',
+        '[ -f Python-2.7.tar.bz2 ] || wget http://www.python.org/ftp/python/2.7/Python-2.7.tar.bz2',
         '[ -d Python-2.7 ] || tar xjvf Python-2.7.tar.bz2',
         '[ -d python2.7 ] || ( cd Python-2.7 && ./configure --prefix=%s/python2.7 && make install ) && ( cd ez_setup-0.9 && ../python2.7/bin/python setup.py install)' % p,
         '[ -f virtualenv-1.10.1.tar.gz ] || curl -o virtualenv-1.10.1.tar.gz https://pypi.python.org/packages/source/v/virtualenv/virtualenv-1.10.1.tar.gz',
