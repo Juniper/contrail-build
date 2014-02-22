@@ -14,7 +14,9 @@ import time
 import commands
 
 def getDistribution():
-    distribution = subprocess.check_output('lsb_release -is', shell=True)
+    cmd = 'lsb_release -is'
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+    distribution, stderr = p.communicate()
     return distribution.rstrip(os.linesep)
 
 
@@ -561,7 +563,10 @@ def PyTestSuiteCov(target, source, env):
     return None
 
 def PlatformDarwin(env):
-    ver = subprocess.check_output("sw_vers | \grep ProductVersion", shell=True).rstrip('\n')
+    cmd = 'sw_vers | \grep ProductVersion'
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+    ver, stderr = p.communicate()
+    ver = ver.rstrip('\n')
     ver = re.match(r'ProductVersion:\s+(\d+\.\d+)', ver).group(1)
     if float(ver) >= 10.9:
         return
