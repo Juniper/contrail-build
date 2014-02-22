@@ -12,13 +12,7 @@ import subprocess
 import sys
 import time
 import commands
-
-def getDistribution():
-    cmd = 'lsb_release -is'
-    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
-    distribution, stderr = p.communicate()
-    return distribution.rstrip(os.linesep)
-
+import platform
 
 def RunUnitTest(env, target, source, timeout = 60):
     if env['ENV'].has_key('BUILD_ONLY'):
@@ -641,7 +635,7 @@ def SetupBuildEnvironment(conf):
     env['INSTALL_LIB'] += '/lib'
     env['INSTALL_CONF'] += '/etc/contrail'
 
-    distribution = getDistribution()
+    distribution = platform.dist()[0]
     if distribution == "Ubuntu":
         env['PYTHON_INSTALL_OPT'] += '--install-layout=deb '
 
