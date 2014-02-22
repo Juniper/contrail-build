@@ -696,5 +696,9 @@ def SetupBuildEnvironment(conf):
     PyTestSuiteCovBuilder = Builder(action = PyTestSuiteCov)
     env.Append(BUILDERS = {'PyTestSuiteCov' : PyTestSuiteCovBuilder})
 
+    symlink_builder = Builder(action = "ln -s ${SOURCE.file} ${TARGET.file}",
+                              chdir = True)
+    env.Append(BUILDERS = {'Symlink': symlink_builder})
+
     return env
 # SetupBuildEnvironment
