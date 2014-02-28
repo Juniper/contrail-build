@@ -81,12 +81,16 @@ def setup_venv(env, target, venv_name, path=None):
     shell_cmd = ' && '.join ([
         'cd %s' % p,
         '[ -f ez_setup-0.9.tar.gz ] || curl -o ez_setup-0.9.tar.gz https://pypi.python.org/packages/source/e/ez_setup/ez_setup-0.9.tar.gz',
-        '[ -f Python-2.7.tar.bz2 ] || wget http://www.python.org/ftp/python/2.7/Python-2.7.tar.bz2',
-        '[ -d Python-2.7 ] || tar xjvf Python-2.7.tar.bz2',
-        '[ -d python2.7 ] || ( cd Python-2.7 && ./configure --prefix=%s/python2.7 && make install ) && ( cd ez_setup-0.9 && ../python2.7/bin/python setup.py install)' % p,
+        '[ -d ez_setup-0.9 ] || tar xzf ez_setup-0.9.tar.gz',
+        '[ -f ../redis-2.6.13.tar.gz ] || (cd .. && wget https://redis.googlecode.com/files/redis-2.6.13.tar.gz)',
+        '[ -d ../redis-2.6.13 ] || (cd .. && tar xzf redis-2.6.13.tar.gz)',
+        '[ -f testroot/bin/redis-server ] || ( cd ../redis-2.6.13 && make PREFIX=%s/testroot install)' % p,
+        '[ -f ../Python-2.7.3.tar.bz2 ] || (cd .. && wget http://www.python.org/ftp/python/2.7.3/Python-2.7.3.tar.bz2)',
+        '[ -d ../Python-2.7.3 ] || (cd .. && tar xjvf Python-2.7.3.tar.bz2)',
+        '[ -f testroot/bin/python ] || ( cd ../Python-2.7.3 && ./configure --prefix=%s/testroot && make install ) && ( cd ez_setup-0.9 && ../testroot/bin/python setup.py install)' % p,
         '[ -f virtualenv-1.10.1.tar.gz ] || curl -o virtualenv-1.10.1.tar.gz https://pypi.python.org/packages/source/v/virtualenv/virtualenv-1.10.1.tar.gz',
         '[ -d virtualenv-1.10.1 ] || tar xzvf virtualenv-1.10.1.tar.gz',
-        'python2.7/bin/python virtualenv-1.10.1/virtualenv.py --python=python2.7/bin/python %s',
+        'testroot/bin/python virtualenv-1.10.1/virtualenv.py --python=testroot/bin/python %s',
     ])
     for t, v in zip(target, venv_name):
         cmd = env.Command (v, '', shell_cmd % (v,))
@@ -109,7 +113,7 @@ def venv_add_pip_pkg(env, v, pkg_list):
         if name[0] != '/':
             targets.append(name)
 
-    cmd = env.Command(targets, None, 'source %s/bin/activate; pip install %s' %
+    cmd = env.Command(targets, None, '/bin/bash -c "source %s/bin/activate; pip install %s"' %
                       (venv._path, ' '.join(pkg_list)))
     env.AlwaysBuild(cmd)
     env.Depends(cmd, venv)
@@ -121,7 +125,7 @@ def venv_add_build_pkg(env, v, pkg):
     for p in pkg:
         t = 'build-' + os.path.basename (p)
         cmd += env.Command (t, '',
-       'source %s/bin/activate; pushd %s && python setup.py install; popd' % (
+       '/bin/bash -c "source %s/bin/activate; pushd %s && python setup.py install; popd"' % (
               venv._path, p))
     env.AlwaysBuild(cmd)
     env.Depends(cmd, venv)
