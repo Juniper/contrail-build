@@ -86,7 +86,7 @@ def setup_venv(env, target, venv_name, path=None):
         '[ -f ../redis-2.6.13.tar.gz ] || (cd .. && wget https://redis.googlecode.com/files/redis-2.6.13.tar.gz)',
         '[ -d ../redis-2.6.13 ] || (cd .. && tar xzf redis-2.6.13.tar.gz)',
         '[ -f testroot/bin/redis-server ] || ( cd ../redis-2.6.13 && make PREFIX=%s/testroot install)' % p,
-        '[ -f ../Python-2.7.3.tar.bz2 ] || (cd .. && wget http://www.python.org/ftp/python/2.7.3/Python-2.7.3.tar.bz2)',
+        '[ -f ../Python-2.7.3.tar.bz2 ] || (cd .. && wget --no-check-certificate http://www.python.org/ftp/python/2.7.3/Python-2.7.3.tar.bz2)',
         '[ -d ../Python-2.7.3 ] || (cd .. && tar xjvf Python-2.7.3.tar.bz2)',
         '[ -f testroot/bin/python ] || ( cd ../Python-2.7.3 && ./configure --prefix=%s/testroot && make install ) && ( cd ez_setup-0.9 && ../testroot/bin/python setup.py install)' % p,
         '[ -f virtualenv-1.10.1.tar.gz ] || curl -o virtualenv-1.10.1.tar.gz https://pypi.python.org/packages/source/v/virtualenv/virtualenv-1.10.1.tar.gz',
