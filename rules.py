@@ -651,7 +651,7 @@ def SetupBuildEnvironment(conf):
         env['ENV_SHLIB_PATH'] = 'LD_LIBRARY_PATH'
 
     if env.get('TARGET_MACHINE') == 'i686':
-        env.Append(CCFLAGS = '-march=' + arch)
+        env.Append(CCFLAGS = '-march=' + 'i686')
 
     env['TOP_BIN'] = '#build/bin'
     env['TOP_INCLUDE'] = '#build/include'
