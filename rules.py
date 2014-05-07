@@ -5,6 +5,7 @@
 import os
 import re
 from SCons.Builder import Builder
+from SCons.Errors import convert_to_BuildError
 from SCons.Script import AddOption, GetOption
 import json
 import SCons.Util
@@ -68,6 +69,7 @@ def RunUnitTest(env, target, source, timeout = 60):
         else:
             logfile.write('Program returned ' + str(code) + '\n') 
         print test + '\033[91m' + " FAIL" + '\033[0m'
+        raise convert_to_BuildError(code)
 
 def TestSuite(env, target, source):
     for test in source:
@@ -545,7 +547,7 @@ def CheckBuildConfiguration(conf):
         if commands.getoutput(conf.env['CC'] + ' -dumpversion') == "4.7.0":
             print "Unsupported/Buggy compiler gcc 4.7.0 for building " + \
                   "optimized binaries"
-            exit(1)
+            raise convert_to_BuildError(1)
     return conf.Finish()
 
 def PyTestSuiteCov(target, source, env):
