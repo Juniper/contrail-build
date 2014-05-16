@@ -565,7 +565,7 @@ def PyTestSuiteCov(target, source, env):
 
 def PlatformDarwin(env):
     cmd = 'sw_vers | \grep ProductVersion'
-    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, shell=True)
     ver, stderr = p.communicate()
     ver = ver.rstrip('\n')
     ver = re.match(r'ProductVersion:\s+(\d+\.\d+)', ver).group(1)
