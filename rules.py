@@ -617,6 +617,7 @@ def SetupBuildEnvironment(conf):
     env['INSTALL_BIN'] = ''
     env['INSTALL_LIB'] = ''
     env['INSTALL_CONF'] = ''
+    env['INSTALL_EXAMPLE'] = ''
     env['PYTHON_INSTALL_OPT'] = ''
 
     install_root = GetOption('install_root')
@@ -624,6 +625,7 @@ def SetupBuildEnvironment(conf):
         env['INSTALL_BIN'] = install_root
         env['INSTALL_LIB'] = install_root
         env['INSTALL_CONF'] = install_root
+        env['INSTALL_EXAMPLE'] = install_root
         env['PYTHON_INSTALL_OPT'] = '--root ' + install_root + ' '
 
     install_prefix = GetOption('install_prefix')
@@ -641,6 +643,7 @@ def SetupBuildEnvironment(conf):
     env['INSTALL_BIN'] += '/bin'
     env['INSTALL_LIB'] += '/lib'
     env['INSTALL_CONF'] += '/etc/contrail'
+    env['INSTALL_EXAMPLE'] += '/usr/share/contrail'
 
     distribution = platform.dist()[0]
     if distribution == "Ubuntu":
