@@ -618,6 +618,7 @@ def SetupBuildEnvironment(conf):
     env['INSTALL_LIB'] = ''
     env['INSTALL_CONF'] = ''
     env['PYTHON_INSTALL_OPT'] = ''
+    env['ENV']['PIP_DOWNLOAD_CACHE'] = '/tmp/cache/%s/distro_third_party' % os.environ.get('USER')
 
     install_root = GetOption('install_root')
     if install_root:
