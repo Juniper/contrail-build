@@ -470,19 +470,13 @@ def ThriftGenCppFunc(env, file, async):
     env.Depends(targets, '#/build/bin/thrift')
     return env.ThriftCpp(targets, file)
 
-def ThriftPyBuilder(target, source, env):
-    opath = str(target[0]).rsplit('/',1)[0] 
-    py_opath = opath.rsplit('/',1)[0] + '/'
-    thriftcmd = env.Dir(env['TOP_BIN']).abspath + '/thrift'
-    code = subprocess.call(thriftcmd + ' --gen py:new_style -I src/ -out ' +
-                           py_opath + " " + str(source[0]), shell=True)
-    if code:
-        raise SCons.Errors.StopError(ThriftCodeGeneratorError, 
-                                     'Thrift Compiler Failed')
-#end ThirftPyBuilder
+def ThriftPyBuilder(source, target, env, for_signature):
+    output_dir = os.path.dirname(os.path.dirname(str(target[0])))
+    return ('%s/thrift --gen py:new_style,utf8strings -I src/ -out %s %s' %
+            (env.Dir(env['TOP_BIN']), output_dir, source[0]))
 
 def ThriftSconsEnvPyFunc(env):
-    pybuild = Builder(action = ThriftPyBuilder)
+    pybuild = Builder(generator = ThriftPyBuilder)
     env.Append(BUILDERS = {'ThriftPy' : pybuild})
 
 def ThriftGenPyFunc(env, path, target=''):
