@@ -1,0 +1,9 @@
+Verified+2: Zuul <zuul@lists.opencontrail.org>
+Code-Review+1: Édouard Thuleau <edouard.thuleau@cloudwatt.com>
+Approved+1: Vinay Vithal Mahuli <vmahuli@juniper.net>
+Code-Review+2: Vinay Vithal Mahuli <vmahuli@juniper.net>
+Submitted-by: Zuul <zuul@lists.opencontrail.org>
+Submitted-at: Wed, 09 Jul 2014 17:20:32 -0700
+Reviewed-on: https://review.opencontrail.org/610
+Project: Juniper/contrail-build
+Branch: refs/heads/master
