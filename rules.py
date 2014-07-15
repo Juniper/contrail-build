@@ -282,7 +282,7 @@ def ExtractCppFunc(env, filelist):
     for target in filelist:
         fname = str(target)
         ext = fname.rsplit('.', 1)[1]
-        if ext == 'cpp':
+        if ext == 'cpp' or ext == 'cc':
             CppSrcs.append(fname)
     return CppSrcs
 
@@ -306,6 +306,61 @@ def ExtractHeaderFunc(env, filelist):
             Headers.append(fname)
     return Headers
 
+# ProtocDesc Methods
+def ProtocDescBuilder(target, source, env):
+    if not env.Detect('protoc'):
+        raise SCons.Errors.StopError(
+            'protoc Compiler not detected on system')
+    protoc = env.WhereIs('protoc')
+    protoc_cmd = protoc + ' --descriptor_set_out=' + \
+        str(target[0]) + ' --include_imports ' + \
+        str(source[0]) 
+    print protoc_cmd
+    code = subprocess.call(protoc_cmd, shell=True)
+    if code != 0:
+        raise SCons.Errors.StopError(
+            'protobuf desc generation failed')
+
+def ProtocSconsEnvDescFunc(env):
+    descbuild = Builder(action = ProtocDescBuilder)
+    env.Append(BUILDERS = {'ProtocDesc' : descbuild})
+
+def ProtocGenDescFunc(env, file):
+    ProtocSconsEnvDescFunc(env)
+    suffixes = ['.desc']
+    basename = Basename(file)
+    targets = map(lambda suffix: basename + suffix, suffixes)
+    return env.ProtocDesc(targets, file)
+
+# ProtocCpp Methods
+def ProtocCppBuilder(target, source, env):
+    spath = str(source[0]).rsplit('/',1)[0] + "/"
+    if not env.Detect('protoc'):
+        raise SCons.Errors.StopError(
+            'protoc Compiler not detected on system')
+    protoc = env.WhereIs('protoc')
+    protoc_cmd = protoc + ' --proto_path=/usr/include/ ' + \
+        '--proto_path=controller/src/ --proto_path=' + \
+        spath + ' --cpp_out=' + str(env.Dir(env['TOP'])) + ' ' + \
+        str(source[0])
+    print protoc_cmd
+    code = subprocess.call(protoc_cmd, shell=True)
+    if code != 0:
+        raise SCons.Errors.StopError(
+            'protobuf code generation failed')
+
+def ProtocSconsEnvCppFunc(env):
+    cppbuild = Builder(action = ProtocCppBuilder)
+    env.Append(BUILDERS = {'ProtocCpp' : cppbuild})
+
+def ProtocGenCppFunc(env, file):
+    ProtocSconsEnvCppFunc(env)
+    suffixes = ['.pb.h',
+                '.pb.cc'
+               ]
+    basename = Basename(file)
+    targets = map(lambda suffix: basename + suffix, suffixes)
+    return env.ProtocCpp(targets, file)
 
 class SandeshWarning(SCons.Warnings.Warning):
     pass
@@ -685,7 +740,9 @@ def SetupBuildEnvironment(conf):
 
     env.AddMethod(ExtractCppFunc, "ExtractCpp")
     env.AddMethod(ExtractCFunc, "ExtractC")
-    env.AddMethod(ExtractHeaderFunc, "ExtractHeader")    
+    env.AddMethod(ExtractHeaderFunc, "ExtractHeader")
+    env.AddMethod(ProtocGenDescFunc, "ProtocGenDesc")
+    env.AddMethod(ProtocGenCppFunc, "ProtocGenCpp")    
     env.AddMethod(SandeshGenOnlyCppFunc, "SandeshGenOnlyCpp")
     env.AddMethod(SandeshGenCppFunc, "SandeshGenCpp")
     env.AddMethod(SandeshGenCFunc, "SandeshGenC")
