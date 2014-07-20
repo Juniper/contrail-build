@@ -32,7 +32,8 @@ def RunUnitTest(env, target, source, timeout = 60):
     ShEnv = {env['ENV_SHLIB_PATH']: 'build/lib',
              'DB_ITERATION_TO_YIELD': '1',
              'PATH': os.environ['PATH'],
-             'USER': os.environ['USER']}
+             'USER': os.environ['USER'],
+             'TOP_OBJECT_PATH': env['TOP'][1:]}
     heap_check = True
     try:
         # Skip HEAPCHECK in CentOS 6.4
