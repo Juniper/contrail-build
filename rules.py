@@ -82,18 +82,20 @@ def TestSuite(env, target, source):
 
 def setup_venv(env, target, venv_name, path=None):
     p = path or env.Dir(env['TOP']).abspath
+    tdir = '/tmp/cache/%s/systemless_test' % os.environ['USER']
     shell_cmd = ' && '.join ([
         'cd %s' % p,
-        '[ -f ez_setup-0.9.tar.gz ] || curl -o ez_setup-0.9.tar.gz https://pypi.python.org/packages/source/e/ez_setup/ez_setup-0.9.tar.gz',
-        '[ -d ez_setup-0.9 ] || tar xzf ez_setup-0.9.tar.gz',
-        '[ -f ../redis-2.6.13.tar.gz ] || (cd .. && wget https://redis.googlecode.com/files/redis-2.6.13.tar.gz)',
-        '[ -d ../redis-2.6.13 ] || (cd .. && tar xzf redis-2.6.13.tar.gz)',
+        'mkdir %s' % tdir,
+        '[ -f %s/ez_setup-0.9.tar.gz ] || curl -o %s/ez_setup-0.9.tar.gz https://pypi.python.org/packages/source/e/ez_setup/ez_setup-0.9.tar.gz' % (tdir,tdir),
+        '[ -d ez_setup-0.9 ] || tar xzf %s/ez_setup-0.9.tar.gz' % tdir,
+        '[ -f %s/redis-2.6.13.tar.gz ] || (cd %s && wget https://redis.googlecode.com/files/redis-2.6.13.tar.gz)' % (tdir,tdir),
+        '[ -d ../redis-2.6.13 ] || (cd .. && tar xzf %s/redis-2.6.13.tar.gz)' % tdir,
         '[ -f testroot/bin/redis-server ] || ( cd ../redis-2.6.13 && make PREFIX=%s/testroot install)' % p,
-        '[ -f ../Python-2.7.3.tar.bz2 ] || (cd .. && wget --no-check-certificate http://www.python.org/ftp/python/2.7.3/Python-2.7.3.tar.bz2)',
-        '[ -d ../Python-2.7.3 ] || (cd .. && tar xjvf Python-2.7.3.tar.bz2)',
+        '[ -f %s/Python-2.7.3.tar.bz2 ] || (cd %s && wget --no-check-certificate http://www.python.org/ftp/python/2.7.3/Python-2.7.3.tar.bz2)' % (tdir,tdir),
+        '[ -d ../Python-2.7.3 ] || (cd .. && tar xjvf %s/Python-2.7.3.tar.bz2)' % tdir,
         '[ -f testroot/bin/python ] || ( cd ../Python-2.7.3 && ./configure --prefix=%s/testroot && make install ) && ( cd ez_setup-0.9 && ../testroot/bin/python setup.py install)' % p,
-        '[ -f virtualenv-1.10.1.tar.gz ] || curl -o virtualenv-1.10.1.tar.gz https://pypi.python.org/packages/source/v/virtualenv/virtualenv-1.10.1.tar.gz',
-        '[ -d virtualenv-1.10.1 ] || tar xzvf virtualenv-1.10.1.tar.gz',
+        '[ -f %s/virtualenv-1.10.1.tar.gz ] || curl -o %s/virtualenv-1.10.1.tar.gz https://pypi.python.org/packages/source/v/virtualenv/virtualenv-1.10.1.tar.gz' % (tdir,tdir),
+        '[ -d virtualenv-1.10.1 ] || tar xzvf %s/virtualenv-1.10.1.tar.gz' % tdir,
         'testroot/bin/python virtualenv-1.10.1/virtualenv.py --python=testroot/bin/python %s',
     ])
     for t, v in zip(target, venv_name):
