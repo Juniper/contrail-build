@@ -140,15 +140,16 @@ def venv_add_build_pkg(env, v, pkg):
 def PyTestSuite(env, target, source, venv=None):
     for test in source:
         log = test + '.log'
-        cmd = env.Command(log, test, RunUnitTest)
-        env.AlwaysBuild(cmd)
-        env.Alias(target, cmd)
         if venv:
-            env.Depends(cmd, venv)
             try:
                 env['_venv'][log] = venv[0]
             except KeyError:
                 env['_venv'] = {log: venv[0]}
+        cmd = env.Command(log, test, RunUnitTest)
+        if venv:
+            env.Depends(cmd, venv)
+        env.AlwaysBuild(cmd)
+        env.Alias(target, cmd)
     return target
 
 def UnitTest(env, name, sources):
