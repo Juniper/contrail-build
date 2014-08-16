@@ -45,6 +45,9 @@ def RunUnitTest(env, target, source, timeout = 60):
     if heap_check or env['ENV'].has_key('HEAPCHECK'):
         ShEnv['HEAPCHECK'] = 'normal'
         ShEnv['PPROF'] = 'build/bin/pprof'
+        # Fix for frequent crash in gperftools ListerThread during exit
+        # https://code.google.com/p/gperftools/issues/detail?id=497
+        ShEnv['LD_BIND_NOW'] = '1'
 
     proc = subprocess.Popen(cmd, stdout=logfile, stderr=logfile, env=ShEnv)
 
