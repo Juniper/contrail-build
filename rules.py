@@ -675,6 +675,7 @@ def SetupBuildEnvironment(conf):
     env['INSTALL_CONF'] = ''
     env['INSTALL_EXAMPLE'] = ''
     env['PYTHON_INSTALL_OPT'] = ''
+    env['INSTALL_DOC'] = ''
 
     install_root = GetOption('install_root')
     if install_root:
@@ -682,6 +683,7 @@ def SetupBuildEnvironment(conf):
         env['INSTALL_LIB'] = install_root
         env['INSTALL_CONF'] = install_root
         env['INSTALL_EXAMPLE'] = install_root
+        env['INSTALL_DOC'] = install_root
         env['PYTHON_INSTALL_OPT'] = '--root ' + install_root + ' '
 
     install_prefix = GetOption('install_prefix')
@@ -700,6 +702,7 @@ def SetupBuildEnvironment(conf):
     env['INSTALL_LIB'] += '/lib'
     env['INSTALL_CONF'] += '/etc/contrail'
     env['INSTALL_EXAMPLE'] += '/usr/share/contrail'
+    env['INSTALL_DOC'] += '/usr/share/doc'
 
     distribution = platform.dist()[0]
     if distribution == "Ubuntu":
