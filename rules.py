@@ -76,12 +76,13 @@ def RunUnitTest(env, target, source, timeout = 60):
         raise convert_to_BuildError(code)
 
 def TestSuite(env, target, source):
-    for test in source:
-        log = test[0].abspath + '.log'
-        cmd = env.Command(log, test, RunUnitTest)
-        env.AlwaysBuild(cmd)
-        env.Alias(target, cmd)
-    return target
+    if len(source):
+        for test in source:
+            log = test[0].abspath + '.log'
+            cmd = env.Command(log, test, RunUnitTest)
+            env.AlwaysBuild(cmd)
+            env.Alias(target, cmd)
+        return target
 
 def setup_venv(env, target, venv_name, path=None):
     p = path or env.Dir(env['TOP']).abspath
