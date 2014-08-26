@@ -620,6 +620,17 @@ def PyTestSuiteCov(target, source, env):
         RunUnitTest(env, [env.File(logfile)], [env.File(test)], 300)
     return None
 
+def CppDisableExceptions(env):
+    (distname, version, _) = platform.dist()
+    if distname != 'Ubuntu' or float(version) < 14.04:
+        env.AppendUnique(CCFLAGS='-fno-exceptions')
+
+def CppEnableExceptions(env):
+    cflags = env['CCFLAGS']
+    if '-fno-exceptions' in cflags:
+        cflags.remove('-fno-exceptions')
+        env.Replace(CCFLAGS = cflags)
+
 def PlatformDarwin(env):
     cmd = 'sw_vers | \grep ProductVersion'
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, shell=True)
@@ -768,5 +779,7 @@ def SetupBuildEnvironment(conf):
                               chdir = True)
     env.Append(BUILDERS = {'Symlink': symlink_builder})
 
+    env.AddMethod(CppDisableExceptions, "CppDisableExceptions")
+    env.AddMethod(CppEnableExceptions, "CppEnableExceptions")
     return env
 # SetupBuildEnvironment
