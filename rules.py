@@ -122,8 +122,9 @@ def venv_add_pip_pkg(env, v, pkg_list):
         if name[0] != '/':
             targets.append(name)
 
-    cmd = env.Command(targets, None, '/bin/bash -c "source %s/bin/activate; pip install %s"' %
-                      (venv._path, ' '.join(pkg_list)))
+    tdir = '/tmp/cache/%s/systemless_test' % os.environ['USER']
+    cmd = env.Command(targets, None, '/bin/bash -c "source %s/bin/activate; pip install --download-cache=%s %s"' %
+                      (venv._path, tdir, ' '.join(pkg_list)))
     env.AlwaysBuild(cmd)
     env.Depends(cmd, venv)
     return cmd
