@@ -621,9 +621,24 @@ def PyTestSuiteCov(target, source, env):
         RunUnitTest(env, [env.File(logfile)], [env.File(test)], 300)
     return None
 
-def CppDisableExceptions(env):
+def UseSystemBoost(env):
+    from distutils.version import LooseVersion
+    """
+    Use the boost library provided by the system.
+    """
     (distname, version, _) = platform.dist()
-    if distname != 'Ubuntu' or float(version) < 14.04:
+    exclude_dist = [
+        ('Ubuntu', '14.04'),
+        ('centos', '7.0'),
+    ]
+    for dist in exclude_dist:
+        if (distname == dist[0] and
+            LooseVersion(version) >= LooseVersion(dist[1])):
+            return True
+    return False
+
+def CppDisableExceptions(env):
+    if not UseSystemBoost(env):
         env.AppendUnique(CCFLAGS='-fno-exceptions')
 
 def CppEnableExceptions(env):
@@ -783,6 +798,7 @@ def SetupBuildEnvironment(conf):
                               chdir = True)
     env.Append(BUILDERS = {'Symlink': symlink_builder})
 
+    env.AddMethod(UseSystemBoost, "UseSystemBoost")
     env.AddMethod(CppDisableExceptions, "CppDisableExceptions")
     env.AddMethod(CppEnableExceptions, "CppEnableExceptions")
     return env
