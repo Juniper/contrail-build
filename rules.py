@@ -620,19 +620,33 @@ def PyTestSuiteCov(target, source, env):
     return None
 
 def UseSystemBoost(env):
+    """
+    Whether to use the boost library provided by the system.
+    """
     from distutils.version import LooseVersion
-    """
-    Use the boost library provided by the system.
-    """
     (distname, version, _) = platform.dist()
-    exclude_dist = [
-        ('Ubuntu', '14.04'),
-        ('centos', '7.0'),
-    ]
-    for dist in exclude_dist:
-        if (distname == dist[0] and
-            LooseVersion(version) >= LooseVersion(dist[1])):
-            return True
+    exclude_dist = {
+        'Ubuntu': '14.04',
+        'centos': '7.0',
+    }
+    v_required = exclude_dist.get(distname)
+    if v_required and LooseVersion(version) >= LooseVersion(v_required):
+        return True
+    return False
+
+def UseSystemTBB(env):
+    """ Return True whenever the compilation uses the built-in version of the
+    Thread-Building Block library instead of compiling it.
+    """
+    from distutils.version import LooseVersion
+    systemTBBdict = {
+        'Ubuntu': '14.04',
+        'centos': '7.0',
+    }
+    (distname, version, _) = platform.dist()
+    v_required = systemTBBdict.get(distname)
+    if v_required and LooseVersion(version) >= LooseVersion(v_required):
+        return True
     return False
 
 def CppDisableExceptions(env):
@@ -797,6 +811,7 @@ def SetupBuildEnvironment(conf):
     env.Append(BUILDERS = {'Symlink': symlink_builder})
 
     env.AddMethod(UseSystemBoost, "UseSystemBoost")
+    env.AddMethod(UseSystemTBB, "UseSystemTBB")
     env.AddMethod(CppDisableExceptions, "CppDisableExceptions")
     env.AddMethod(CppEnableExceptions, "CppEnableExceptions")
     return env
