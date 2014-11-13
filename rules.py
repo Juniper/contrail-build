@@ -5,6 +5,7 @@
 import os
 import re
 from SCons.Builder import Builder
+from SCons.Action import Action
 from SCons.Errors import convert_to_BuildError
 from SCons.Script import AddOption, GetOption
 import json
@@ -165,19 +166,18 @@ def UnitTest(env, name, sources):
     return test_env.Program(name, sources)
 
 def GenerateBuildInfoCode(env, target, source, path):
-    if not os.path.isdir(path):
-        os.makedirs(path)
-    env.Command(target=target, source=source, action=BuildInfoAction, chdir=path)
+    env.Command(target=target, source=source, action=BuildInfoAction)
     return
 
 def BuildInfoAction(env, target, source):
+    build_dir = target[0].dir.path
     try:
         build_user = os.environ['USER']
     except KeyError:
         build_user = "unknown"
 
     try:
-        build_host = os.environ['HOSTNAME']
+        build_host = env['HOSTNAME']
     except KeyError:
         build_host = "unknown"
 
@@ -185,9 +185,8 @@ def BuildInfoAction(env, target, source):
     import datetime
     build_time = unicode(datetime.datetime.utcnow())
 
-    repo_path = env.Dir('#').abspath + '/controller'
-    
     # Fetch git version
+    repo_path = env.Dir('#controller').path
     cmd = 'cd ' + repo_path + '; git log --oneline | head -1 | awk \'{ print $1 }\''
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, 
                          shell='True')
@@ -230,11 +229,11 @@ extern const std::string BuildInfo;
 const std::string BuildInfo = "%(json)s";
 """ % { 'json': jsdata.replace('"', "\\\"") }
 
-    h_file = file('buildinfo.h', 'w')
+    h_file = file(os.path.join(build_dir, 'buildinfo.h'), 'w')
     h_file.write(h_code)
     h_file.close()
 
-    cc_file = file('buildinfo.cc', 'w')
+    cc_file = file(os.path.join(build_dir, 'buildinfo.cc'), 'w')
     cc_file.write(cc_code)
     cc_file.close()
     return 
@@ -250,7 +249,7 @@ def GenerateBuildInfoPyCode(env, target, source, path):
         build_user = "unknown"
 
     try:
-        build_host = os.environ['HOSTNAME']
+        build_host = env['HOSTNAME']
     except KeyError:
         build_host = "unknown"
 
@@ -259,7 +258,8 @@ def GenerateBuildInfoPyCode(env, target, source, path):
     build_time = unicode(datetime.datetime.utcnow())
 
     # Fetch git version
-    p = subprocess.Popen('git log --oneline | head -1 | awk \'{ print $1 }\'',
+    repo_path = env.Dir('#controller').path
+    p = subprocess.Popen('cd ' + repo_path + ' && git log --oneline | head -1 | awk \'{ print $1 }\'',
                          stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell='True')
     build_git_info, err = p.communicate()
     build_git_info = build_git_info.strip()
@@ -272,8 +272,6 @@ def GenerateBuildInfoPyCode(env, target, source, path):
     # build json string containing build information
     build_info = "{\\\"build-info\\\" : [{\\\"build-version\\\" : \\\"" + str(build_version) + "\\\", \\\"build-time\\\" : \\\"" + str(build_time) + "\\\", \\\"build-user\\\" : \\\"" + build_user + "\\\", \\\"build-hostname\\\" : \\\"" + build_host + "\\\", \\\"build-git-ver\\\" : \\\"" + build_git_info + "\\\", "
     py_code ="build_info = \""+ build_info + "\";\n"
-    if not os.path.exists(path):
-        os.makedirs(path)
     py_file = file(path + '/buildinfo.py', 'w')
     py_file.write(py_code)
     py_file.close()
@@ -379,19 +377,18 @@ class SandeshCodeGeneratorError(SandeshWarning):
 
 # SandeshGenOnlyCpp Methods
 def SandeshOnlyCppBuilder(target, source, env):
-    opath = str(target[0]).rsplit('/',1)[0] + "/"
-    sname = str(target[0]).rsplit('/',1)[1].rsplit('_',1)[0]
-    sandeshcmd = env.Dir(env['TOP_BIN']).abspath + '/sandesh'
-    code = subprocess.call(sandeshcmd + ' --gen cpp -I controller/src/ -out ' + 
-                           opath + " " + str(source[0]), shell=True)
+    sname = os.path.splitext(source[0].name)[0] # file name w/o .sandesh
+    html_cpp_name = os.path.join(target[0].dir.path, sname + '_html.cpp')
+
+    code = subprocess.call(env['SANDESH'] + ' --gen cpp -I controller/src/ -out ' +
+                           target[0].dir.path + " " + source[0].path, shell=True)
     if code != 0:
         raise SCons.Errors.StopError(SandeshCodeGeneratorError,
-                                     'Sandesh code generation failed')
-    cname = sname + "_html.cpp"
-    os.system("echo \"int " + sname + "_marker = 0;\" >> " + opath + cname)
+                                     'SandeshOnlyCpp code generation failed')
+    os.system("echo \"int " + sname + "_marker = 0;\" >> " + html_cpp_name)
 
 def SandeshSconsEnvOnlyCppFunc(env):
-    onlycppbuild = Builder(action = SandeshOnlyCppBuilder)
+    onlycppbuild = Builder(action = Action(SandeshOnlyCppBuilder,'SandeshOnlyCppBuilder $SOURCE -> $TARGETS'))
     env.Append(BUILDERS = {'SandeshOnlyCpp' : onlycppbuild})
 
 def SandeshGenOnlyCppFunc(env, file):
@@ -403,32 +400,32 @@ def SandeshGenOnlyCppFunc(env, file):
         '_html.cpp']
     basename = Basename(file)
     targets = map(lambda suffix: basename + suffix, suffixes)
-    env.Depends(targets, '#/build/bin/sandesh')
+    env.Depends(targets, '#build/bin/sandesh')
     return env.SandeshOnlyCpp(targets, file)
 
 # SandeshGenCpp Methods
 def SandeshCppBuilder(target, source, env):
-    opath = str(target[0]).rsplit('/',1)[0] + "/"
-    sname = str(target[0]).rsplit('/',1)[1].rsplit('_',1)[0]
-    sandeshcmd = env.Dir(env['TOP_BIN']).abspath + '/sandesh'
-    code = subprocess.call(sandeshcmd + ' --gen cpp --gen html -I controller/src/ -I tools -out '
-                           + opath + " " + str(source[0]), shell=True)
+    opath = target[0].dir.path
+    sname = os.path.join(opath, os.path.splitext(source[0].name)[0])
+
+    code = subprocess.call(env['SANDESH'] + ' --gen cpp --gen html -I controller/src/ -I tools -out '
+                           + opath + " " + source[0].path, shell=True)
     if code != 0:
-        raise SCons.Errors.StopError(SandeshCodeGeneratorError, 
-                                     'Sandesh code generation failed')
+        raise SCons.Errors.StopError(SandeshCodeGeneratorError,
+                                     'SandeshCpp code generation failed')
     tname = sname + "_html_template.cpp"
-    hname = sname + ".xml"
+    hname = os.path.basename(sname + ".xml")
     cname = sname + "_html.cpp"
     if not env.Detect('xxd'):
         raise SCons.Errors.StopError(SandeshCodeGeneratorError,
                                      'xxd not detected on system')
-    os.system("echo \"namespace {\"" + " >> " + opath + cname)
-    os.system("(cd " + opath + " ; xxd -i " + hname + " >> " + cname + " )")
-    os.system("echo \"}\"" + " >> " + opath + cname)
-    os.system("cat " + opath + tname + " >> " + opath + cname)
+    os.system("echo \"namespace {\"" + " >> " + cname)
+    os.system("(cd " + opath + " ; xxd -i " + hname + " >> " + os.path.basename(cname) + " )")
+    os.system("echo \"}\"" + " >> " + cname)
+    os.system("cat " + tname + " >> " + cname)
 
 def SandeshSconsEnvCppFunc(env):
-    cppbuild = Builder(action = SandeshCppBuilder)
+    cppbuild = Builder(action = Action(SandeshCppBuilder, 'SandeshCppBuilder $SOURCE -> $TARGETS'))
     env.Append(BUILDERS = {'SandeshCpp' : cppbuild})
 
 def SandeshGenCppFunc(env, file):
@@ -440,21 +437,21 @@ def SandeshGenCppFunc(env, file):
         '_html.cpp']
     basename = Basename(file)
     targets = map(lambda suffix: basename + suffix, suffixes)
-    env.Depends(targets, '#/build/bin/sandesh')
+    env.Depends(targets, '#build/bin/sandesh')
     return env.SandeshCpp(targets, file)
 
 # SandeshGenC Methods
 def SandeshCBuilder(target, source, env):
-    opath = str(target[0]).rsplit('gen-c',1)[0]
-    sandeshcmd = env.Dir(env['TOP_BIN']).abspath + '/sandesh'
-    code = subprocess.call(sandeshcmd + ' --gen c -o ' + opath +
-                           ' ' + str(source[0]), shell=True) 
+    # We need to trim the /gen-c/ out of the target path
+    opath = os.path.dirname(target[0].dir.path)
+    code = subprocess.call(env['SANDESH'] + ' --gen c -o ' + opath +
+                           ' ' + source[0].path, shell=True) 
     if code != 0:
         raise SCons.Errors.StopError(SandeshCodeGeneratorError, 
-                                     'Sandesh code generation failed')
+                                     'SandeshC code generation failed')
             
 def SandeshSconsEnvCFunc(env):
-    cbuild = Builder(action = SandeshCBuilder)
+    cbuild = Builder(action = Action(SandeshCBuilder, 'SandeshCBuilder $SOURCE -> $TARGETS'))
     env.Append(BUILDERS = {'SandeshC' : cbuild})
 
 def SandeshGenCFunc(env, file):
@@ -462,28 +459,26 @@ def SandeshGenCFunc(env, file):
     suffixes = ['_types.h', '_types.c']
     basename = Basename(file)
     targets = map(lambda suffix: 'gen-c/' + basename + suffix, suffixes)
-    env.Depends(targets, '#/build/bin/sandesh')
+    env.Depends(targets, '#build/bin/sandesh')
     return env.SandeshC(targets, file)
 
 # SandeshGenPy Methods
 def SandeshPyBuilder(target, source, env):
-    opath = str(target[0]).rsplit('/',1)[0] 
-    py_opath = opath.rsplit('/',1)[0] + '/'
-    sandeshcmd = env.Dir(env['TOP_BIN']).abspath + '/sandesh'
-    code = subprocess.call(sandeshcmd + ' --gen py:new_style -I controller/src/ -I tools -out ' + \
-        py_opath + " " + str(source[0]), shell=True)
+    opath = target[0].dir.path
+    py_opath = os.path.dirname(opath)
+    code = subprocess.call(env['SANDESH'] + ' --gen py:new_style -I controller/src/ -I tools -out ' +
+                           py_opath + " " + source[0].path, shell=True)
     if code != 0:
         raise SCons.Errors.StopError(SandeshCodeGeneratorError, 
-                                     'Sandesh Compiler Failed')
-    html_opath = opath + '/'
-    code = subprocess.call(sandeshcmd + ' --gen html -I controller/src/ -I tools -out ' + \
-        html_opath + " " + str(source[0]), shell=True)
+                                     'SandeshPy py code generation failed')
+    code = subprocess.call(env['SANDESH'] + ' --gen html -I controller/src/ -I tools -out ' +
+                           opath + " " + source[0].path, shell=True)
     if code != 0:
         raise SCons.Errors.StopError(SandeshCodeGeneratorError, 
-                                     'Sandesh code generation failed')
+                                     'SandeshPy html generation failed')
 
 def SandeshSconsEnvPyFunc(env):
-    pybuild = Builder(action = SandeshPyBuilder)
+    pybuild = Builder(action = Action(SandeshPyBuilder,'SandeshPyBuilder $SOURCE -> $TARGETS'))
     env.Append(BUILDERS = {'SandeshPy' : pybuild})
 
 def SandeshGenPyFunc(env, path, target='', gen_py=True):
@@ -505,7 +500,7 @@ def SandeshGenPyFunc(env, path, target='', gen_py=True):
     else:
         targets = map(lambda module: target + mod_dir + module, modules)
 
-    env.Depends(targets, '#/build/bin/sandesh')
+    env.Depends(targets, '#build/bin/sandesh')
     return env.SandeshPy(targets, path)
 
 # ThriftGenCpp Methods
@@ -709,6 +704,9 @@ def SetupBuildEnvironment(conf):
 
     env = CheckBuildConfiguration(conf)
 
+    # Keep track of the -j value passed to us
+    env['NUM_JOBS'] = GetOption('num_jobs')
+
     env['OPT'] = GetOption('opt')
     env['TARGET_MACHINE'] = GetOption('target')
     env['INSTALL_PREFIX'] = GetOption('install_prefix')
@@ -771,6 +769,26 @@ def SetupBuildEnvironment(conf):
     env['TOP_INCLUDE'] = '#build/include'
     env['TOP_LIB'] = '#build/lib'
 
+    # Store path to sandesh compiler in the env
+    env['SANDESH'] = os.path.join(env.Dir(env['TOP_BIN']).path, 'sandesh')
+
+    # Store the hostname in env.
+    try:
+        build_host = env['HOSTNAME'] if 'HOSTNAME' in env else os.environ['HOSTNAME']
+    except KeyError:
+        build_host = os.uname()[1]
+    env['HOSTNAME'] = build_host
+
+    # Store repo projects in the environment
+    proc = subprocess.Popen('repo list', stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell='True')
+    repo_out, err = proc.communicate()
+    repo_lines = repo_out.splitlines()
+    repo_list = {}
+    for l in repo_lines:
+        (path,repo) = l.split(" : ")
+        repo_list[path] = repo
+    env['REPO_PROJECTS'] = repo_list
+
     opt_level = env['OPT']
     if opt_level == 'production':
         env.Append(CCFLAGS = '-g -O3')
@@ -816,8 +834,9 @@ def SetupBuildEnvironment(conf):
     PyTestSuiteCovBuilder = Builder(action = PyTestSuiteCov)
     env.Append(BUILDERS = {'PyTestSuiteCov' : PyTestSuiteCovBuilder})
 
-    symlink_builder = Builder(action = "ln -s ${SOURCE.file} ${TARGET.file}",
-                              chdir = True)
+    # Not used?
+    symlink_builder = Builder(action = "cd ${TARGET.dir} && " +
+                              "ln -s ${SOURCE.file} ${TARGET.file}")
     env.Append(BUILDERS = {'Symlink': symlink_builder})
 
     env.AddMethod(UseSystemBoost, "UseSystemBoost")
