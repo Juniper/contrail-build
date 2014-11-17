@@ -694,6 +694,12 @@ def PlatformDarwin(env):
 #   env.Append(LIBPATH = env['ENV']['SDKROOT'] + '/usr/lib')
 #   env.Append(LIBS = 'c++.1')
 
+def build_maven(env, target, source, path):
+    mvn_target = env.Command(target, source, 'mvn install', chdir=path)
+    env.AlwaysBuild(mvn_target)
+    env.Default(mvn_target)
+    return mvn_target
+
 def SetupBuildEnvironment(conf):
     AddOption('--optimization', dest = 'opt',
               action='store', default='debug',
@@ -713,6 +719,7 @@ def SetupBuildEnvironment(conf):
     env['TARGET_MACHINE'] = GetOption('target')
     env['INSTALL_PREFIX'] = GetOption('install_prefix')
     env['INSTALL_BIN'] = ''
+    env['INSTALL_SHARE'] = ''
     env['INSTALL_LIB'] = ''
     env['INSTALL_INIT'] = ''
     env['INSTALL_INITD'] = ''
@@ -724,6 +731,7 @@ def SetupBuildEnvironment(conf):
     install_root = GetOption('install_root')
     if install_root:
         env['INSTALL_BIN'] = install_root
+        env['INSTALL_SHARE'] = install_root
         env['INSTALL_LIB'] = install_root
         env['INSTALL_INIT'] = install_root
         env['INSTALL_INITD'] = install_root
@@ -735,18 +743,21 @@ def SetupBuildEnvironment(conf):
     install_prefix = GetOption('install_prefix')
     if install_prefix:
         env['INSTALL_BIN'] += install_prefix
+        env['INSTALL_SHARE'] += install_prefix
         env['INSTALL_LIB'] += install_prefix
         env['INSTALL_INIT'] += install_prefix
         env['INSTALL_INITD'] += install_prefix
         env['PYTHON_INSTALL_OPT'] += '--prefix ' + install_prefix + ' '
     elif install_root:
         env['INSTALL_BIN'] += '/usr'
+        env['INSTALL_SHARE'] += '/usr'
         env['INSTALL_LIB'] += '/usr'
         env['PYTHON_INSTALL_OPT'] += '--prefix /usr '
     else:
         env['INSTALL_BIN'] += '/usr/local'
 
     env['INSTALL_BIN'] += '/bin'
+    env['INSTALL_SHARE'] += '/share'
     env['INSTALL_LIB'] += '/lib'
     env['INSTALL_INIT'] += '/etc/init'
     env['INSTALL_INITD'] += '/etc/init.d'
@@ -797,6 +808,7 @@ def SetupBuildEnvironment(conf):
     env.Append(BUILDERS = {'setup_venv': setup_venv})
     env.Append(BUILDERS = {'venv_add_pip_pkg': venv_add_pip_pkg })
     env.Append(BUILDERS = {'venv_add_build_pkg': venv_add_build_pkg })
+    env.Append(BUILDERS = {'build_maven': build_maven })
 
     env.AddMethod(ExtractCppFunc, "ExtractCpp")
     env.AddMethod(ExtractCFunc, "ExtractC")
