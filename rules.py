@@ -62,6 +62,7 @@ def RunUnitTest(env, target, source, timeout = 60):
         proc.kill()
         logfile.write('[  TIMEOUT  ] ')
         print test + '\033[91m' + " TIMEOUT" + '\033[0m'
+        raise convert_to_BuildError(code)
         return
 
     if code == 0:
