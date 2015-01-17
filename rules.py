@@ -145,6 +145,8 @@ def venv_add_build_pkg(env, v, pkg):
     return cmd
 
 def PyTestSuite(env, target, source, venv=None):
+    if env['ENV'].has_key('BUILD_ONLY'):
+        return target
     for test in source:
         log = test + '.log'
         if venv:
