@@ -20,3 +20,6 @@ SConscript('openstack/nova_contrail_vif/SConscript',
 
 SConscript('openstack/neutron_plugin/SConscript',
            variant_dir='build/noarch/neutron_plugin')
+
+SConscript('contrail-f5/SConscript',
+           variant_dir='build/noarch/contrail-f5')
