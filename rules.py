@@ -616,7 +616,7 @@ def PyTestSuiteCov(target, source, env):
             except KeyError:
                 env['_venv'] = {log: venv[0]}
         logfile = test.path + '.log'
-        RunUnitTest(env, [env.File(logfile)], [env.File(test)], 300)
+        RunUnitTest(env, [env.File(logfile)], [env.File(test)], 400)
     return None
 
 def UseSystemBoost(env):
