@@ -16,10 +16,14 @@ import time
 import commands
 import platform
 
-def RunUnitTest(env, target, source, timeout = 60):
+def RunUnitTest(env, target, source, timeout = 180):
     if env['ENV'].has_key('BUILD_ONLY'):
         return
     import subprocess
+
+    if env['ENV'].has_key('CONTRAIL_UT_TEST_TIMEOUT'):
+        timeout = int(env['ENV']['CONTRAIL_UT_TEST_TIMEOUT'])
+
     test = str(source[0].abspath)
     logfile = open(target[0].abspath, 'w')
     #    env['_venv'] = {target: venv}
