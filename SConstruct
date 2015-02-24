@@ -25,5 +25,8 @@ if os.path.exists("openstack/contrail-nova-extensions/contrail_network_api/SCons
 SConscript('openstack/neutron_plugin/SConscript',
            variant_dir='build/noarch/neutron_plugin')
 
+SConscript('openstack/ceilometer_plugin/SConscript',
+           variant_dir='build/noarch/ceilometer_plugin')
+
 SConscript('contrail-f5/SConscript',
            variant_dir='build/noarch/contrail-f5')
