@@ -7,7 +7,7 @@ import re
 from SCons.Builder import Builder
 from SCons.Action import Action
 from SCons.Errors import convert_to_BuildError
-from SCons.Script import AddOption, GetOption
+from SCons.Script import AddOption, GetOption, SetOption
 import json
 import SCons.Util
 import subprocess
@@ -176,6 +176,34 @@ def GenerateBuildInfoCode(env, target, source, path):
     env.Command(target=target, source=source, action=BuildInfoAction)
     return
 
+# If contrail-controller (i.e., #controller/) is present, determine
+# git hash of head and get base version from version.info, else use
+# hard-coded values.
+#
+def GetBuildVersion(env):
+    # Fetch git version
+    controller_path = env.Dir('#controller').path
+    if os.path.exists(controller_path):
+        p = subprocess.Popen('cd %s && git rev-parse --short HEAD' % controller_path,
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE,
+                             shell='True')
+        git_hash, err = p.communicate()
+        git_hash = git_hash.strip()
+    else:
+        # Or should we look for vrouter, tools/build, or ??
+        git_hash = 'noctrlr'
+
+    # Fetch build version
+    file_path = env.File('#/controller/src/base/version.info').abspath
+    if os.path.exists(file_path):
+        f = open(file_path)
+        base_ver = (f.readline()).strip()
+    else:
+        base_ver = "3.0"
+
+    return git_hash, base_ver
+
 def GetBuildInfoData(env, target, source):
     try:
         build_user = os.environ['USER']
@@ -191,18 +219,7 @@ def GetBuildInfoData(env, target, source):
     import datetime
     build_time = unicode(datetime.datetime.utcnow())
 
-    # Fetch git version
-    repo_path = env.Dir('#controller').path
-    cmd = 'cd ' + repo_path + '; git log --oneline | head -1 | awk \'{ print $1 }\''
-    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, 
-                         shell='True')
-    build_git_info, err = p.communicate()
-    build_git_info = build_git_info.strip()
-
-    # Fetch build version
-    file_path = env.File('#/controller/src/base/version.info').abspath
-    f = open(file_path)
-    build_version = (f.readline()).strip()
+    build_git_info, build_version = GetBuildVersion(env)
 
     # build json string containing build information
     info = {
@@ -287,17 +304,7 @@ def GenerateBuildInfoPyCode(env, target, source, path):
     import datetime
     build_time = unicode(datetime.datetime.utcnow())
 
-    # Fetch git version
-    repo_path = env.Dir('#controller').path
-    p = subprocess.Popen('cd ' + repo_path + ' && git log --oneline | head -1 | awk \'{ print $1 }\'',
-                         stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell='True')
-    build_git_info, err = p.communicate()
-    build_git_info = build_git_info.strip()
-
-    # Fetch build version
-    file_path = env.Dir('#').abspath + '/controller/src/base/version.info'
-    f = open(file_path)
-    build_version = (f.readline()).strip()
+    build_git_info, build_version = GetBuildVersion(env)
 
     # build json string containing build information
     build_info = "{\\\"build-info\\\" : [{\\\"build-version\\\" : \\\"" + str(build_version) + "\\\", \\\"build-time\\\" : \\\"" + str(build_time) + "\\\", \\\"build-user\\\" : \\\"" + build_user + "\\\", \\\"build-hostname\\\" : \\\"" + build_host + "\\\", \\\"build-git-ver\\\" : \\\"" + build_git_info + "\\\", "
@@ -399,6 +406,25 @@ def ProtocGenCppFunc(env, file):
     targets = map(lambda suffix: basename + suffix, suffixes)
     return env.ProtocCpp(targets, file)
 
+# When doing parallel build, scons will sometimes try to invoke the
+# sandesh compiler while sandesh itself is still being compiled and
+# linked. This results in a 'text file busy' error, and the build
+# aborts.
+# To avoid this, a 'wait for it' loop... we run 'sandesh -version',
+# and sleep for one sec before retry if it fails.
+#
+# This is a terrible hack, and should be fixed, but all attempts to
+# get scons to recognize the dependency on the sandesh compailer have
+# so far been fruitless.
+#
+def wait_for_sandesh_install(env):
+    rc = 0
+    while (rc != 1):
+        rc = os.system(env['SANDESH'] + ' -version >/dev/null 2>/dev/null') >> 8
+        if (rc != 1):
+            print 'scons: warning: sandesh -version returned %d, retrying' % rc
+            time.sleep(1)
+
 class SandeshWarning(SCons.Warnings.Warning):
     pass
 
@@ -410,6 +436,7 @@ def SandeshOnlyCppBuilder(target, source, env):
     sname = os.path.splitext(source[0].name)[0] # file name w/o .sandesh
     html_cpp_name = os.path.join(target[0].dir.path, sname + '_html.cpp')
 
+    wait_for_sandesh_install(env)
     code = subprocess.call(env['SANDESH'] + ' --gen cpp -I controller/src/ -out ' +
                            target[0].dir.path + " " + source[0].path, shell=True)
     if code != 0:
@@ -438,6 +465,7 @@ def SandeshCppBuilder(target, source, env):
     opath = target[0].dir.path
     sname = os.path.join(opath, os.path.splitext(source[0].name)[0])
 
+    wait_for_sandesh_install(env)
     code = subprocess.call(env['SANDESH'] + ' --gen cpp --gen html -I controller/src/ -I tools -out '
                            + opath + " " + source[0].path, shell=True)
     if code != 0:
@@ -474,6 +502,7 @@ def SandeshGenCppFunc(env, file):
 def SandeshCBuilder(target, source, env):
     # We need to trim the /gen-c/ out of the target path
     opath = os.path.dirname(target[0].dir.path)
+    wait_for_sandesh_install(env)
     code = subprocess.call(env['SANDESH'] + ' --gen c -o ' + opath +
                            ' ' + source[0].path, shell=True) 
     if code != 0:
@@ -496,6 +525,7 @@ def SandeshGenCFunc(env, file):
 def SandeshPyBuilder(target, source, env):
     opath = target[0].dir.path
     py_opath = os.path.dirname(opath)
+    wait_for_sandesh_install(env)
     code = subprocess.call(env['SANDESH'] + ' --gen py:new_style -I controller/src/ -I tools -out ' +
                            py_opath + " " + source[0].path, shell=True)
     if code != 0:
@@ -727,6 +757,36 @@ def build_maven(env, target, source, path):
     env.Default(mvn_target)
     return mvn_target
 
+# Decide whether to use parallel build, and determine value to use/set.
+# Controlled by environment var CONTRAIL_BUILD_JOBS:
+#    if set to 'no' or 1, then no parallel build
+#    if set to an integer, use it blindly
+#    if set to any other string (e.g., 'yes'):
+#        compute a reasonable value based on number of CPU's and load avg
+#
+def determine_job_value():
+    if 'CONTRAIL_BUILD_JOBS' not in os.environ: return 1
+
+    v = os.environ['CONTRAIL_BUILD_JOBS']
+    if v == 'no': return 1
+
+    try: return int(v)
+    except: pass
+
+    try:
+        import multiprocessing
+        ncpu = multiprocessing.cpu_count()
+        ncore = ncpu / 2
+    except:
+        ncore = 1
+
+    (one,five,_) = os.getloadavg()
+    avg_load = int(one + five / 2)
+    avail = (ncore - avg_load) * 3 / 2
+    print "scons: available jobs = %d" % avail
+    return avail
+
+
 def SetupBuildEnvironment(conf):
     AddOption('--optimization', dest = 'opt',
               action='store', default='debug',
@@ -742,8 +802,16 @@ def SetupBuildEnvironment(conf):
 
     env = CheckBuildConfiguration(conf)
 
-    # Keep track of the -j value passed to us
-    env['NUM_JOBS'] = GetOption('num_jobs')
+    # Let's decide how many jobs (-jNN) we should use.
+    nj = GetOption('num_jobs')
+    if nj == 1:
+        # Should probably check for CLI over-ride of -j1 (i.e., do not
+        # assume 1 means -j not specified).
+        nj = determine_job_value()
+        if nj > 1:
+            print "scons: setting jobs (-j) to %d" % nj
+            SetOption('num_jobs', nj)
+            env['NUM_JOBS'] = nj
 
     env['OPT'] = GetOption('opt')
     env['TARGET_MACHINE'] = GetOption('target')
