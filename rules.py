@@ -358,7 +358,9 @@ def ProtocDescBuilder(target, source, env):
     protoc = env.WhereIs('protoc')
     protoc_cmd = protoc + ' --descriptor_set_out=' + \
         str(target[0]) + ' --include_imports ' + \
-        str(source[0]) 
+        ' --proto_path=controller/src/' + \
+        ' --proto_path=/usr/include/ ' + \
+        str(source[0])
     print protoc_cmd
     code = subprocess.call(protoc_cmd, shell=True)
     if code != 0:
