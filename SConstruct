@@ -28,6 +28,3 @@ SConscript('openstack/neutron_plugin/SConscript',
 if os.path.exists("openstack/ceilometer_plugin/SConscript"):
     SConscript('openstack/ceilometer_plugin/SConscript',
                variant_dir='build/noarch/ceilometer_plugin')
-
-SConscript('contrail-f5/SConscript',
-           variant_dir='build/noarch/contrail-f5')
