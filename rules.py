@@ -905,9 +905,11 @@ def SetupBuildEnvironment(conf):
     opt_level = env['OPT']
     if opt_level == 'production':
         env.Append(CCFLAGS = '-g -O3')
+        env.Append(LINKFLAGS= ['-g'])
         env['TOP'] = '#build/production'
     elif opt_level == 'debug':
         env.Append(CCFLAGS = ['-g', '-O0', '-DDEBUG'])
+        env.Append(LINKFLAGS= ['-g'])
         env['TOP'] = '#build/debug'
     elif opt_level == 'profile':
         # Enable profiling through gprof
@@ -916,6 +918,7 @@ def SetupBuildEnvironment(conf):
         env['TOP'] = '#build/profile'
     elif opt_level == 'coverage':
         env.Append(CCFLAGS = ['-g', '-O0', '--coverage'])
+        env.Append(LINKFLAGS = ['-g'])
         env['TOP'] = '#build/coverage'
         env.Append(LIBS = 'gcov')
 
