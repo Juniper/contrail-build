@@ -15,7 +15,7 @@ import time
 import commands
 import platform
 
-def RunUnitTest(env, target, source, timeout = 60):
+def RunUnitTest(env, target, source, timeout = 180):
     if env['ENV'].has_key('BUILD_ONLY'):
         return
     import subprocess
@@ -51,7 +51,7 @@ def RunUnitTest(env, target, source, timeout = 60):
 
     proc = subprocess.Popen(cmd, stdout=logfile, stderr=logfile, env=ShEnv)
 
-    # 60 second timeout
+    # Poll every second till timeout
     for i in range(timeout):
         code = proc.poll()
         if not code is None:
