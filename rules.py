@@ -91,7 +91,12 @@ def TestSuite(env, target, source):
         return target
 
 def setup_venv(env, target, venv_name, path=None):
-    p = path or env.Dir(env['TOP']).abspath
+    p = path
+    if not p:
+        ws_link = os.environ.get('CONTRAIL_REPO')
+        if ws_link: p = ws_link
+        else: p = env.Dir(env['TOP']).abspath
+
     tdir = '/tmp/cache/%s/systemless_test' % os.environ['USER']
     shell_cmd = ' && '.join ([
         'cd %s' % p,
