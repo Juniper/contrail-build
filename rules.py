@@ -88,7 +88,7 @@ def TestSuite(env, target, source):
 def setup_venv(env, target, venv_name, path=None):
     p = path
     if not p:
-        ws_link = os.environ.get('CONTRAIL_REPO')
+        ws_link = os.environ.get('CONTRAIL_REPO') + "/build/" + env['OPT']
         if ws_link: p = ws_link
         else: p = env.Dir(env['TOP']).abspath
 
