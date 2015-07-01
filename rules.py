@@ -145,7 +145,7 @@ def venv_add_build_pkg(env, v, pkg):
     cmd = []
     venv = env[v[0]]
     for p in pkg:
-        t = 'build-' + os.path.basename (p)
+        t = 'build-' + p.replace('/', '_')
         cmd += env.Command (t, '',
        '/bin/bash -c "source %s/bin/activate; pushd %s && python setup.py install; popd"' % (
               venv._path, p))
