@@ -1,0 +1,9 @@
+Verified+2: Zuul <zuul@lists.opencontrail.org>
+Code-Review+2: Ananth Suryanarayana <anantha@juniper.net>
+Code-Review+2: Nischal Sheth <nsheth@juniper.net>
+Approved+1: Ashish Ranjan <aranjan@juniper.net>
+Submitted-by: Zuul <zuul@lists.opencontrail.org>
+Submitted-at: Wed, 08 Jul 2015 19:10:34 -0700
+Reviewed-on: https://review.opencontrail.org/12209
+Project: Juniper/contrail-build
+Branch: refs/heads/R2.20
