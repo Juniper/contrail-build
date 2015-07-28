@@ -31,6 +31,10 @@ def RunUnitTest(env, target, source, timeout = 180):
     if '_venv' in  env and tgt in env['_venv'] and env['_venv'][tgt]:
         cmd = ['/bin/bash', '-c', 'source %s/bin/activate && %s' % (
                 env[env['_venv'][tgt]]._path, test)]
+    elif env['ENV'].has_key('VALGRIND'):
+        cmd = ['valgrind', '--track-origins=yes', '--num-callers=50',
+               '--show-possibly-lost=no', '--leak-check=full',
+               '--error-limit=no', test]
     else:
         cmd = [test]
 
@@ -38,7 +42,7 @@ def RunUnitTest(env, target, source, timeout = 180):
     ShEnv.update({env['ENV_SHLIB_PATH']: 'build/lib',
                   'DB_ITERATION_TO_YIELD': '1',
                   'TOP_OBJECT_PATH': env['TOP'][1:]})
-    heap_check = True
+    heap_check = env['ENV'].has_key('NO_HEAPCHECK') == False
     try:
         # Skip HEAPCHECK in CentOS 6.4
         subprocess.check_call("grep -q \"CentOS release 6.4\" /etc/issue 2>/dev/null", shell=True)
@@ -171,7 +175,11 @@ def PyTestSuite(env, target, source, venv=None):
 
 def UnitTest(env, name, sources):
     test_env = env.Clone()
-    if sys.platform != 'darwin' and env.get('OPT') != 'coverage':
+
+    # Do not link with tcmalloc when running under valgrind/coverage env.
+    if sys.platform != 'darwin' and env.get('OPT') != 'coverage' and \
+           not env['ENV'].has_key('NO_HEAPCHECK') and \
+           not env['ENV'].has_key('VALGRIND'):
         test_env.Append(LIBPATH = '#/build/lib')
         test_env.Append(LIBS = ['tcmalloc'])
     return test_env.Program(name, sources)
