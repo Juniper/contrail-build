@@ -800,11 +800,37 @@ def SetupBuildEnvironment(conf):
     env['INSTALL_EXAMPLE'] += '/usr/share/contrail'
     env['INSTALL_DOC'] += '/usr/share/doc'
 
-    distribution = platform.dist()[0]
-    if distribution == "Ubuntu":
+    # Let's add a few var's that we can use elsewhere
+    # to check what platform (build-host) we are on.
+    plat = platform.system()
+    if plat == 'Linux':
+	distribution = platform.linux_distribution()
+    elif plat == 'Darwin':
+	distribution = ('Darwin','','')
+    else:
+	distribution = ('','','')
+    env['OC_DISTRO'] = distribution[0]
+    env['OC_DISTRO_VERSION'] = distribution[1]
+    env['OC_DISTRO_VERSION_ALIAS'] = distribution[2]
+    if distribution == ('CentOS', '6.5', 'Final'):
+	env['OC_PLATFORM'] = 'centos65'
+    elif distribution == ('CentOS Linux', '7.1.1503', 'Core'):
+	env['OC_PLATFORM'] = 'centos71'
+    elif distribution == ('Darwin','',''):
+	env['OC_PLATFORM'] = 'darwin'
+    elif distribution == ('Red Hat Enterprise Linux Server', '7.0', 'Maipo'):
+	env['OC_PLATFORM'] = 'redhat70'
+    elif distribution == ('Ubuntu','12.04','precise'):
+	env['OC_PLATFORM'] = 'ubuntu-12-04'
+    elif distribution == ('Ubuntu','14.04','trusty'):
+	env['OC_PLATFORM'] = 'ubuntu-14-04'
+    else:
+	env['OC_PLATFORM'] = 'unknown'
+
+    if env['OC_DISTRO'] == "Ubuntu":
         env['PYTHON_INSTALL_OPT'] += '--install-layout=deb '
 
-    if sys.platform == 'darwin':
+    if env['OC_PLATFORM'] == 'darwin':
         PlatformDarwin(env)
         env['ENV_SHLIB_PATH'] = 'DYLD_LIBRARY_PATH'
     else:
