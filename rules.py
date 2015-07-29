@@ -16,6 +16,41 @@ import time
 import commands
 import platform
 
+def GetPlatformInfo():
+    '''
+    Returns same 3-tuple as platform.dist()/platform.linux_distribution() (caches tuple)
+    '''
+    GetPlatformInfo.__dict__.setdefault('system', None)
+    GetPlatformInfo.__dict__.setdefault('distro', None)
+    if not GetPlatformInfo.system: GetPlatformInfo.system = platform.system()
+
+    if not GetPlatformInfo.distro:
+        if GetPlatformInfo.system == 'Linux':
+            GetPlatformInfo.distro = platform.linux_distribution()
+        elif GetPlatformInfo.system == 'Darwin':
+            GetPlatformInfo.distro = ('Darwin','','')
+        else:
+            GetPlatformInfo.distro = ('Unknown','','')
+
+    return GetPlatformInfo.distro
+
+def PlatformExclude(env, **kwargs):
+    """
+    Return True if platform_excludes list includes a tuple that matches this host/version
+    """
+    if 'platform_exclude' not in kwargs: return False
+
+    from distutils.version import LooseVersion
+
+    distro = GetPlatformInfo()
+    this_ver = LooseVersion(distro[1])
+
+    for (p,v) in kwargs['platform_exclude']:
+        if distro[0] != p: continue
+        excl_ver = LooseVersion(v)
+        if this_ver >= excl_ver: return True
+    return False
+
 def RunUnitTest(env, target, source, timeout = 180):
     if env['ENV'].has_key('BUILD_ONLY'):
         return
@@ -86,8 +121,10 @@ def RunUnitTest(env, target, source, timeout = 180):
 
 def TestSuite(env, target, source):
     if len(source):
-        for test in source:
-            log = test[0].abspath + '.log'
+        for test in env.Flatten(source):
+            # UnitTest() may have tagged tests with skip_run attribute
+            if getattr( test.attributes, 'skip_run', False ): continue
+            log = test.abspath + '.log'
             cmd = env.Command(log, test, RunUnitTest)
             env.AlwaysBuild(cmd)
             env.Alias(target, cmd)
@@ -173,7 +210,7 @@ def PyTestSuite(env, target, source, venv=None):
         env.Alias(target, cmd)
     return target
 
-def UnitTest(env, name, sources):
+def UnitTest(env, name, sources, **kwargs):
     test_env = env.Clone()
 
     # Do not link with tcmalloc when running under valgrind/coverage env.
@@ -182,7 +219,10 @@ def UnitTest(env, name, sources):
            not env['ENV'].has_key('VALGRIND'):
         test_env.Append(LIBPATH = '#/build/lib')
         test_env.Append(LIBS = ['tcmalloc'])
-    return test_env.Program(name, sources)
+    test_exe_list = test_env.Program(name, sources)
+    if PlatformExclude(test_env, **kwargs):
+        for t in test_exe_list: t.attributes.skip_run = True
+    return test_exe_list
 
 def GenerateBuildInfoCode(env, target, source, path):
     env.Command(target=target, source=source, action=BuildInfoAction)
@@ -695,7 +735,7 @@ def UseSystemBoost(env):
     Whether to use the boost library provided by the system.
     """
     from distutils.version import LooseVersion
-    (distname, version, _) = platform.dist()
+    (distname, version, _) = GetPlatformInfo()
     exclude_dist = {
         'Ubuntu': '14.04',
         'centos': '7.0',
@@ -716,7 +756,7 @@ def UseSystemTBB(env):
         'centos': '7.0',
         'fedora': '20',
     }
-    (distname, version, _) = platform.dist()
+    (distname, version, _) = GetPlatformInfo()
     v_required = systemTBBdict.get(distname)
     if v_required and LooseVersion(version) >= LooseVersion(v_required):
         return True
@@ -877,11 +917,12 @@ def SetupBuildEnvironment(conf):
     env['INSTALL_EXAMPLE'] += '/usr/share/contrail'
     env['INSTALL_DOC'] += '/usr/share/doc'
 
-    distribution = platform.dist()[0]
+    distribution = GetPlatformInfo()[0]
+
     if distribution == "Ubuntu":
         env['PYTHON_INSTALL_OPT'] += '--install-layout=deb '
 
-    if sys.platform == 'darwin':
+    if distribution == 'Darwin':
         PlatformDarwin(env)
         env['ENV_SHLIB_PATH'] = 'DYLD_LIBRARY_PATH'
     else:
