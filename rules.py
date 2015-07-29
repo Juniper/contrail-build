@@ -16,6 +16,41 @@ import time
 import commands
 import platform
 
+def GetPlatformInfo(env):
+    '''
+    Returns same 3-tuple as platform.dist()/platform.linux_distribution() (caches tuple)
+    '''
+    GetPlatformInfo.__dict__.setdefault('system', None)
+    GetPlatformInfo.__dict__.setdefault('distro', None)
+    if not GetPlatformInfo.system: GetPlatformInfo.system = platform.system()
+
+    if not GetPlatformInfo.distro:
+        if GetPlatformInfo.system == 'Linux':
+            GetPlatformInfo.distro = platform.linux_distribution()
+        elif GetPlatformInfo.system == 'Darwin':
+            GetPlatformInfo.distro = ('Darwin','','')
+        else:
+            GetPlatformInfo.distro = ('Unknown','','')
+
+    return GetPlatformInfo.distro
+
+def PlatformExclude(env, **kwargs):
+    """
+    Return True if platform_excludes list includes a tuple that matches this host/version
+    """
+    if 'platform_exclude' not in kwargs: return False
+
+    from distutils.version import LooseVersion
+
+    distro = env.GetPlatformInfo()
+    this_ver = LooseVersion(distro[1])
+
+    for (p,v) in kwargs['platform_exclude']:
+        if distro[0] != p: continue
+        excl_ver = LooseVersion(v)
+        if this_ver >= excl_ver: return True
+    return False
+
 def RunUnitTest(env, target, source, timeout = 180):
     if env['ENV'].has_key('BUILD_ONLY'):
         return
@@ -82,8 +117,10 @@ def RunUnitTest(env, target, source, timeout = 180):
 
 def TestSuite(env, target, source):
     if len(source):
-        for test in source:
-            log = test[0].abspath + '.log'
+        for test in env.Flatten(source):
+            # UnitTest() may have tagged tests with skip_run attribute
+            if getattr( test.attributes, 'skip_run', False ): continue
+            log = test.abspath + '.log'
             cmd = env.Command(log, test, RunUnitTest)
             env.AlwaysBuild(cmd)
             env.Alias(target, cmd)
@@ -169,12 +206,15 @@ def PyTestSuite(env, target, source, venv=None):
         env.Alias(target, cmd)
     return target
 
-def UnitTest(env, name, sources):
+def UnitTest(env, name, sources, **kwargs):
     test_env = env.Clone()
     if sys.platform != 'darwin' and env.get('OPT') != 'coverage':
         test_env.Append(LIBPATH = '#/build/lib')
         test_env.Append(LIBS = ['tcmalloc'])
-    return test_env.Program(name, sources)
+    test_exe_list = test_env.Program(name, sources)
+    if test_env.PlatformExclude(**kwargs):
+        for t in test_exe_list: t.attributes.skip_run = True
+    return test_exe_list
 
 def GenerateBuildInfoCode(env, target, source, path):
     env.Command(target=target, source=source, action=BuildInfoAction)
@@ -655,7 +695,7 @@ def UseSystemBoost(env):
     Whether to use the boost library provided by the system.
     """
     from distutils.version import LooseVersion
-    (distname, version, _) = platform.dist()
+    (distname, version, _) = env.GetPlatformInfo()
     exclude_dist = {
         'Ubuntu': '14.04',
         'centos': '7.0',
@@ -676,7 +716,7 @@ def UseSystemTBB(env):
         'centos': '7.0',
         'fedora': '20',
     }
-    (distname, version, _) = platform.dist()
+    (distname, version, _) = env.GetPlatformInfo()
     v_required = systemTBBdict.get(distname)
     if v_required and LooseVersion(version) >= LooseVersion(v_required):
         return True
@@ -731,6 +771,36 @@ def build_maven(env, target, source, path):
     env.Default(mvn_target)
     return mvn_target
 
+# Decide whether to use parallel build, and determine value to use/set.
+# Controlled by environment var CONTRAIL_BUILD_JOBS:
+#    if set to 'no' or 1, then no parallel build
+#    if set to an integer, use it blindly
+#    if set to any other string (e.g., 'yes'):
+#        compute a reasonable value based on number of CPU's and load avg
+#
+def determine_job_value():
+    if 'CONTRAIL_BUILD_JOBS' not in os.environ: return 1
+
+    v = os.environ['CONTRAIL_BUILD_JOBS']
+    if v == 'no': return 1
+
+    try: return int(v)
+    except: pass
+
+    try:
+        import multiprocessing
+        ncpu = multiprocessing.cpu_count()
+        ncore = ncpu / 2
+    except:
+        ncore = 1
+
+    (one,five,_) = os.getloadavg()
+    avg_load = int(one + five / 2)
+    avail = (ncore - avg_load) * 3 / 2
+    print "scons: available jobs = %d" % avail
+    return avail
+
+
 def SetupBuildEnvironment(conf):
     AddOption('--optimization', dest = 'opt',
               action='store', default='debug',
@@ -746,8 +816,19 @@ def SetupBuildEnvironment(conf):
 
     env = CheckBuildConfiguration(conf)
 
-    # Keep track of the -j value passed to us
-    env['NUM_JOBS'] = GetOption('num_jobs')
+    env.AddMethod(PlatformExclude, "PlatformExclude")
+    env.AddMethod(GetPlatformInfo, "GetPlatformInfo")
+
+    # Let's decide how many jobs (-jNN) we should use.
+    nj = GetOption('num_jobs')
+    if nj == 1:
+        # Should probably check for CLI over-ride of -j1 (i.e., do not
+        # assume 1 means -j not specified).
+        nj = determine_job_value()
+        if nj > 1:
+            print "scons: setting jobs (-j) to %d" % nj
+            SetOption('num_jobs', nj)
+            env['NUM_JOBS'] = nj
 
     env['OPT'] = GetOption('opt')
     env['TARGET_MACHINE'] = GetOption('target')
@@ -799,11 +880,12 @@ def SetupBuildEnvironment(conf):
     env['INSTALL_EXAMPLE'] += '/usr/share/contrail'
     env['INSTALL_DOC'] += '/usr/share/doc'
 
-    distribution = platform.dist()[0]
+    distribution = env.GetPlatformInfo()[0]
+
     if distribution == "Ubuntu":
         env['PYTHON_INSTALL_OPT'] += '--install-layout=deb '
 
-    if sys.platform == 'darwin':
+    if distribution == 'Darwin':
         PlatformDarwin(env)
         env['ENV_SHLIB_PATH'] = 'DYLD_LIBRARY_PATH'
     else:
