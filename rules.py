@@ -687,7 +687,7 @@ def PyTestSuiteCov(target, source, env):
             except KeyError:
                 env['_venv'] = {log: venv[0]}
         logfile = test.path + '.log'
-        RunUnitTest(env, [env.File(logfile)], [env.File(test)], 400)
+        RunUnitTest(env, [env.File(logfile)], [env.File(test)], 800)
     return None
 
 def UseSystemBoost(env):
@@ -804,8 +804,8 @@ def determine_job_value():
 def SetupBuildEnvironment(conf):
     AddOption('--optimization', dest = 'opt',
               action='store', default='debug',
-              choices = ['debug', 'production', 'coverage', 'profile'],
-              help='optimization level: [debug|production|coverage|profile]')
+              choices = ['debug', 'production', 'coverage', 'profile', 'pycov'],
+              help='optimization level: [debug|production|coverage|profile|pycov]')
 
     AddOption('--target', dest = 'target',
               action='store',
@@ -932,6 +932,11 @@ def SetupBuildEnvironment(conf):
         env.Append(CCFLAGS = ['-g', '-O0', '--coverage'])
         env.Append(LINKFLAGS = ['-g'])
         env['TOP'] = '#build/coverage'
+        env.Append(LIBS = 'gcov')
+    elif opt_level == 'pycov':
+        env.Append(CCFLAGS = ['-g', '-O0', '--coverage'])
+        env.Append(LINKFLAGS = ['-g'])
+        env['TOP'] = '#build/debug'
         env.Append(LIBS = 'gcov')
 
     env.Append(BUILDERS = {'PyTestSuite': PyTestSuite })
