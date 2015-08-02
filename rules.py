@@ -739,7 +739,9 @@ def UseSystemBoost(env):
     exclude_dist = {
         'Ubuntu': '14.04',
         'centos': '7.0',
+        'CentOS Linux': '7.0',
         'fedora': '20',
+        'Fedora': '20',
     }
     v_required = exclude_dist.get(distname)
     if v_required and LooseVersion(version) >= LooseVersion(v_required):
@@ -754,7 +756,9 @@ def UseSystemTBB(env):
     systemTBBdict = {
         'Ubuntu': '14.04',
         'centos': '7.0',
+        'CentOS Linux': '7.0',
         'fedora': '20',
+        'Fedora': '20',
     }
     (distname, version, _) = env.GetPlatformInfo()
     v_required = systemTBBdict.get(distname)
