@@ -66,7 +66,7 @@ def RunUnitTest(env, target, source, timeout = 180):
     if '_venv' in  env and tgt in env['_venv'] and env['_venv'][tgt]:
         cmd = ['/bin/bash', '-c', 'source %s/bin/activate && %s' % (
                 env[env['_venv'][tgt]]._path, test)]
-    elif env['ENV'].has_key('VALGRIND'):
+    elif env.get('OPT') == 'valgrind':
         cmd = ['valgrind', '--track-origins=yes', '--num-callers=50',
                '--show-possibly-lost=no', '--leak-check=full',
                '--error-limit=no', test]
@@ -77,15 +77,18 @@ def RunUnitTest(env, target, source, timeout = 180):
     ShEnv.update({env['ENV_SHLIB_PATH']: 'build/lib',
                   'DB_ITERATION_TO_YIELD': '1',
                   'TOP_OBJECT_PATH': env['TOP'][1:]})
-    heap_check = env['ENV'].has_key('NO_HEAPCHECK') == False
-    try:
-        # Skip HEAPCHECK in CentOS 6.4
-        subprocess.check_call("grep -q \"CentOS release 6.4\" /etc/issue 2>/dev/null", shell=True)
-        heap_check = False
-    except:
-        pass
 
-    if heap_check or env['ENV'].has_key('HEAPCHECK'):
+    # Use gprof unless NO_HEAPCHECK is set or in CentOS
+    heap_check = env['ENV'].has_key('NO_HEAPCHECK') == False
+    if heap_check:
+        try:
+            # Skip HEAPCHECK in CentOS 6.4
+            subprocess.check_call("grep -q \"CentOS release 6.4\" /etc/issue 2>/dev/null", shell=True)
+            heap_check = False
+        except:
+            pass
+
+    if heap_check:
         ShEnv['HEAPCHECK'] = 'normal'
         ShEnv['PPROF_PATH'] = 'build/bin/pprof'
         # Fix for frequent crash in gperftools ListerThread during exit
@@ -216,7 +219,7 @@ def UnitTest(env, name, sources, **kwargs):
     # Do not link with tcmalloc when running under valgrind/coverage env.
     if sys.platform != 'darwin' and env.get('OPT') != 'coverage' and \
            not env['ENV'].has_key('NO_HEAPCHECK') and \
-           not env['ENV'].has_key('VALGRIND'):
+           env.get('OPT') != 'valgrind':
         test_env.Append(LIBPATH = '#/build/lib')
         test_env.Append(LIBS = ['tcmalloc'])
     test_exe_list = test_env.Program(name, sources)
@@ -816,8 +819,8 @@ def determine_job_value():
 def SetupBuildEnvironment(conf):
     AddOption('--optimization', dest = 'opt',
               action='store', default='debug',
-              choices = ['debug', 'production', 'coverage', 'profile'],
-              help='optimization level: [debug|production|coverage|profile]')
+              choices = ['debug', 'production', 'coverage', 'profile', 'valgrind'],
+              help='optimization level: [debug|production|coverage|profile|valgrind]')
 
     AddOption('--target', dest = 'target',
               action='store',
@@ -946,6 +949,10 @@ def SetupBuildEnvironment(conf):
         env.Append(CCFLAGS = ['-g', '-O0', '--coverage'])
         env['TOP'] = '#build/coverage'
         env.Append(LIBS = 'gcov')
+    elif opt_level == 'valgrind':
+        env.Append(CCFLAGS = ['-g', '-O0', '-DDEBUG'])
+        env.Append(LINKFLAGS= ['-g'])
+        env['TOP'] = '#build/valgrind'
 
     env.Append(BUILDERS = {'PyTestSuite': PyTestSuite })
     env.Append(BUILDERS = {'TestSuite': TestSuite })
