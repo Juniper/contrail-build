@@ -745,6 +745,7 @@ def UseSystemBoost(env):
         'CentOS Linux': '7.0',
         'fedora': '20',
         'Fedora': '20',
+        'SUSE Linux Enterprise Desktop ': '12',
         'SUSE Linux Enterprise Server ': '12',
     }
     v_required = exclude_dist.get(distname)
