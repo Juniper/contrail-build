@@ -853,8 +853,8 @@ def determine_job_value():
 def SetupBuildEnvironment(conf):
     AddOption('--optimization', dest = 'opt',
               action='store', default='debug',
-              choices = ['debug', 'production', 'coverage', 'profile', 'pycov', 'valgrind'],
-              help='optimization level: [debug|production|coverage|profile|pycov|valgrind]')
+              choices = ['debug', 'production', 'coverage', 'profile', 'valgrind'],
+              help='optimization level: [debug|production|coverage|profile|valgrind]')
 
     AddOption('--target', dest = 'target',
               action='store',
@@ -862,6 +862,7 @@ def SetupBuildEnvironment(conf):
 
     AddOption('--root', dest = 'install_root', action='store')
     AddOption('--prefix', dest = 'install_prefix', action='store')
+    AddOption('--pytest', dest = 'pytest', action='store')
 
     env = CheckBuildConfiguration(conf)
 
@@ -947,6 +948,12 @@ def SetupBuildEnvironment(conf):
     env['TOP_INCLUDE'] = '#build/include'
     env['TOP_LIB'] = '#build/lib'
 
+    pytest = GetOption('pytest')
+    if pytest:
+        env['PYTESTARG'] = pytest
+    else:
+        env['PYTESTARG'] = None
+
     # Store path to sandesh compiler in the env
     env['SANDESH'] = os.path.join(env.Dir(env['TOP_BIN']).path, 'sandesh')
 
@@ -985,11 +992,6 @@ def SetupBuildEnvironment(conf):
         env.Append(CCFLAGS = ['-g', '-O0', '--coverage'])
         env.Append(LINKFLAGS = ['-g'])
         env['TOP'] = '#build/coverage'
-        env.Append(LIBS = 'gcov')
-    elif opt_level == 'pycov':
-        env.Append(CCFLAGS = ['-g', '-O0', '--coverage'])
-        env.Append(LINKFLAGS = ['-g'])
-        env['TOP'] = '#build/debug'
         env.Append(LIBS = 'gcov')
     elif opt_level == 'valgrind':
         env.Append(CCFLAGS = ['-g', '-O0', '-DDEBUG'])
