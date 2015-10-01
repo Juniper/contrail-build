@@ -476,6 +476,60 @@ class SandeshWarning(SCons.Warnings.Warning):
 class SandeshCodeGeneratorError(SandeshWarning):
     pass
 
+# SandeshGenDoc Methods
+def SandeshDocBuilder(target, source, env):
+    opath = target[0].dir.path
+    wait_for_sandesh_install(env)
+    code = subprocess.call(env['SANDESH'] + ' --gen doc -I controller/src/ -I tools -out '
+                           + opath + " " + source[0].path, shell=True)
+    if code != 0:
+        raise SCons.Errors.StopError(SandeshCodeGeneratorError,
+                                     'SandeshDoc documentation generation failed')
+
+def SandeshSconsEnvDocFunc(env):
+    docbuild = Builder(action = Action(SandeshDocBuilder, 'SandeshDocBuilder $SOURCE -> $TARGETS'))
+    env.Append(BUILDERS = {'SandeshDoc' : docbuild})
+
+def SandeshGenDocFunc(env, filepath, target=''):
+    SandeshSconsEnvDocFunc(env)
+    suffixes = ['.html',
+                '_index.html',
+                '_logs.html',
+                '_logs.doc.schema.json',
+                '_logs.emerg.html',
+                '_logs.emerg.doc.schema.json',
+                '_logs.alert.html',
+                '_logs.alert.doc.schema.json',
+                '_logs.crit.html',
+                '_logs.crit.doc.schema.json',
+                '_logs.error.html',
+                '_logs.error.doc.schema.json',
+                '_logs.warn.html',
+                '_logs.warn.doc.schema.json',
+                '_logs.notice.html',
+                '_logs.notice.doc.schema.json',
+                '_logs.info.html',
+                '_logs.info.doc.schema.json',
+                '_logs.debug.html',
+                '_logs.debug.doc.schema.json',
+                '_logs.invalid.html',
+                '_logs.invalid.doc.schema.json',
+                '_uves.html',
+                '_uves.doc.schema.json',
+                '_traces.html',
+                '_traces.doc.schema.json',
+                '_introspect.html',
+                '_introspect.doc.schema.json']
+    basename = Basename(filepath)
+    path_split = basename.rsplit('/', 1)
+    if len(path_split) == 2:
+        filename = path_split[1]
+    else:
+        filename = path_split[0]
+    targets = map(lambda suffix: target + 'gen-doc/' + filename + suffix, suffixes)
+    env.Depends(targets, '#build/bin/sandesh')
+    return env.SandeshDoc(targets, filepath)
+
 # SandeshGenOnlyCpp Methods
 def SandeshOnlyCppBuilder(target, source, env):
     sname = os.path.splitext(source[0].name)[0] # file name w/o .sandesh
@@ -992,6 +1046,7 @@ def SetupBuildEnvironment(conf):
     env.AddMethod(SandeshGenCppFunc, "SandeshGenCpp")
     env.AddMethod(SandeshGenCFunc, "SandeshGenC")
     env.AddMethod(SandeshGenPyFunc, "SandeshGenPy")
+    env.AddMethod(SandeshGenDocFunc, "SandeshGenDoc")
     env.AddMethod(ThriftGenCppFunc, "ThriftGenCpp")
     ThriftSconsEnvPyFunc(env)
     env.AddMethod(ThriftGenPyFunc, "ThriftGenPy")
