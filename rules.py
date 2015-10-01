@@ -488,6 +488,27 @@ class SandeshWarning(SCons.Warnings.Warning):
 class SandeshCodeGeneratorError(SandeshWarning):
     pass
 
+# SandeshGenDoc Methods
+def SandeshDocBuilder(target, source, env):
+    opath = target[0].dir.path
+    code = subprocess.call(env['SANDESH'] + ' --gen doc -I controller/src/ -I tools -out '
+                           + opath + " " + source[0].path, shell=True)
+    if code != 0:
+        raise SCons.Errors.StopError(SandeshCodeGeneratorError,
+                                     'SandeshDoc documentation generation failed')
+
+def SandeshSconsEnvDocFunc(env):
+    docbuild = Builder(action = Action(SandeshDocBuilder, 'SandeshDocBuilder $SOURCE -> $TARGETS'))
+    env.Append(BUILDERS = {'SandeshDoc' : docbuild})
+
+def SandeshGenDocFunc(env, file):
+    SandeshSconsEnvDocFunc(env)
+    suffixes = ['.html']
+    basename = Basename(file)
+    targets = map(lambda suffix: 'gen-doc/' + basename + suffix, suffixes)
+    env.Depends(targets, '#build/bin/sandesh')
+    return env.SandeshDoc(targets, file)
+
 # SandeshGenOnlyCpp Methods
 def SandeshOnlyCppBuilder(target, source, env):
     sname = os.path.splitext(source[0].name)[0] # file name w/o .sandesh
@@ -1019,6 +1040,7 @@ def SetupBuildEnvironment(conf):
     env.AddMethod(SandeshGenCppFunc, "SandeshGenCpp")
     env.AddMethod(SandeshGenCFunc, "SandeshGenC")
     env.AddMethod(SandeshGenPyFunc, "SandeshGenPy")
+    env.AddMethod(SandeshGenDocFunc, "SandeshGenDoc")
     env.AddMethod(ThriftGenCppFunc, "ThriftGenCpp")
     ThriftSconsEnvPyFunc(env)
     env.AddMethod(ThriftGenPyFunc, "ThriftGenPy")
