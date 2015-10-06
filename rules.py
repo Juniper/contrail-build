@@ -491,6 +491,7 @@ class SandeshCodeGeneratorError(SandeshWarning):
 # SandeshGenDoc Methods
 def SandeshDocBuilder(target, source, env):
     opath = target[0].dir.path
+    wait_for_sandesh_install(env)
     code = subprocess.call(env['SANDESH'] + ' --gen doc -I controller/src/ -I tools -out '
                            + opath + " " + source[0].path, shell=True)
     if code != 0:
@@ -501,13 +502,18 @@ def SandeshSconsEnvDocFunc(env):
     docbuild = Builder(action = Action(SandeshDocBuilder, 'SandeshDocBuilder $SOURCE -> $TARGETS'))
     env.Append(BUILDERS = {'SandeshDoc' : docbuild})
 
-def SandeshGenDocFunc(env, file):
+def SandeshGenDocFunc(env, filepath, target=''):
     SandeshSconsEnvDocFunc(env)
     suffixes = ['.html']
-    basename = Basename(file)
-    targets = map(lambda suffix: 'gen-doc/' + basename + suffix, suffixes)
+    basename = Basename(filepath)
+    path_split = basename.rsplit('/', 1)
+    if len(path_split) == 2:
+        filename = path_split[1]
+    else:
+        filename = path_split[0]
+    targets = map(lambda suffix: target + 'gen-doc/' + filename + suffix, suffixes)
     env.Depends(targets, '#build/bin/sandesh')
-    return env.SandeshDoc(targets, file)
+    return env.SandeshDoc(targets, filepath)
 
 # SandeshGenOnlyCpp Methods
 def SandeshOnlyCppBuilder(target, source, env):
