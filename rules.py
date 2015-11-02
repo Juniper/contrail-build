@@ -51,7 +51,22 @@ def PlatformExclude(env, **kwargs):
         if this_ver >= excl_ver: return True
     return False
 
-def RunUnitTest(env, target, source, timeout = 180):
+def GetTestEnvironment(test):
+    env = { }
+    try:
+        with open('controller/ci_unittests.json') as json_file:
+            d = json.load(json_file)
+            for e in d["contrail-control"]["environment"]:
+                for t in e["tests"]:
+                    if re.compile(t).match(test):
+                        for tup in e["tuples"]:
+                            tokens = tup.split("=")
+                            env[tokens[0]] = tokens[1]
+    except:
+        pass
+    return env
+
+def RunUnitTest(env, target, source, timeout = 300):
     if env['ENV'].has_key('BUILD_ONLY'):
         return
     import subprocess
@@ -78,8 +93,9 @@ def RunUnitTest(env, target, source, timeout = 180):
                   'DB_ITERATION_TO_YIELD': '1',
                   'TOP_OBJECT_PATH': env['TOP'][1:]})
 
+    ShEnv.update(GetTestEnvironment(test))
     # Use gprof unless NO_HEAPCHECK is set or in CentOS
-    heap_check = env['ENV'].has_key('NO_HEAPCHECK') == False
+    heap_check = ShEnv.has_key('NO_HEAPCHECK') == False
     if heap_check:
         try:
             # Skip HEAPCHECK in CentOS 6.4
