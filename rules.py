@@ -814,6 +814,24 @@ def UseSystemTBB(env):
         return True
     return False
 
+def UseCassandraCql(env):
+    """
+    Whether to use CQL interface to cassandra
+    """
+    from distutils.version import LooseVersion
+    cassandra_cql_supported = {
+        'Ubuntu': '14.04',
+        'centos': '7.1',
+        'CentOS Linux': '7.1',
+        'redhat': '7.0',
+        'Red Hat Enterprise Linux Server': '7.0',
+    }
+    (distname, version, _) = env.GetPlatformInfo()
+    v_required = cassandra_cql_supported.get(distname)
+    if v_required and LooseVersion(version) >= LooseVersion(v_required):
+        return True
+    return False
+
 def CppDisableExceptions(env):
     if not UseSystemBoost(env):
         env.AppendUnique(CCFLAGS='-fno-exceptions')
@@ -1079,6 +1097,7 @@ def SetupBuildEnvironment(conf):
 
     env.AddMethod(UseSystemBoost, "UseSystemBoost")
     env.AddMethod(UseSystemTBB, "UseSystemTBB")
+    env.AddMethod(UseCassandraCql, "UseCassandraCql")
     env.AddMethod(CppDisableExceptions, "CppDisableExceptions")
     env.AddMethod(CppEnableExceptions, "CppEnableExceptions")
     return env
