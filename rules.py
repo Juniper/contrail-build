@@ -297,8 +297,7 @@ def GetBuildInfoData(env, target, source):
         'build-version': build_version,
         'build-time': build_time,
         'build-user': build_user,
-        'build-hostname': build_host,
-        'build-git-ver': build_git_info
+        'build-hostname': build_host
     }
 
     return json.dumps({'build-info': [info]})
@@ -378,7 +377,7 @@ def GenerateBuildInfoPyCode(env, target, source, path):
     build_git_info, build_version = GetBuildVersion(env)
 
     # build json string containing build information
-    build_info = "{\\\"build-info\\\" : [{\\\"build-version\\\" : \\\"" + str(build_version) + "\\\", \\\"build-time\\\" : \\\"" + str(build_time) + "\\\", \\\"build-user\\\" : \\\"" + build_user + "\\\", \\\"build-hostname\\\" : \\\"" + build_host + "\\\", \\\"build-git-ver\\\" : \\\"" + build_git_info + "\\\", "
+    build_info = "{\\\"build-info\\\" : [{\\\"build-version\\\" : \\\"" + str(build_version) + "\\\", \\\"build-time\\\" : \\\"" + str(build_time) + "\\\", \\\"build-user\\\" : \\\"" + build_user + "\\\", \\\"build-hostname\\\" : \\\"" + build_host + "\\\", "
     py_code ="build_info = \""+ build_info + "\";\n"
     py_file = file(path + '/buildinfo.py', 'w')
     py_file.write(py_code)
