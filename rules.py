@@ -134,7 +134,7 @@ def RunUnitTest(env, target, source, timeout = 300):
         if code < 0:
             logfile.write('Terminated by signal: ' + str(-code) + '\n')
         else:
-            logfile.write('Program returned ' + str(code) + '\n') 
+            logfile.write('Program returned ' + str(code) + '\n')
         print test + '\033[91m' + " FAIL" + '\033[0m'
         raise convert_to_BuildError(code)
 
@@ -265,7 +265,7 @@ def GetBuildInfoData(env, target, source):
     # Fetch git version
     repo_path = env.Dir('#controller').path
     cmd = 'cd ' + repo_path + '; git log --oneline | head -1 | awk \'{ print $1 }\''
-    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, 
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                          shell='True')
     build_git_info, err = p.communicate()
     build_git_info = build_git_info.strip()
@@ -318,7 +318,7 @@ const std::string BuildInfo = "%(json)s";
     cc_file = file(os.path.join(build_dir, 'buildinfo.cc'), 'w')
     cc_file.write(cc_code)
     cc_file.close()
-    return 
+    return
 #end BuildInfoAction
 
 def GenerateBuildInfoCCode(env, target, source, path):
@@ -421,7 +421,7 @@ def ProtocDescBuilder(target, source, env):
     protoc = env.WhereIs('protoc')
     protoc_cmd = protoc + ' --descriptor_set_out=' + \
         str(target[0]) + ' --include_imports ' + \
-        str(source[0]) 
+        str(source[0])
     print protoc_cmd
     code = subprocess.call(protoc_cmd, shell=True)
     if code != 0:
@@ -545,11 +545,11 @@ def SandeshCBuilder(target, source, env):
     # We need to trim the /gen-c/ out of the target path
     opath = os.path.dirname(target[0].dir.path)
     code = subprocess.call(env['SANDESH'] + ' --gen c -o ' + opath +
-                           ' ' + source[0].path, shell=True) 
+                           ' ' + source[0].path, shell=True)
     if code != 0:
-        raise SCons.Errors.StopError(SandeshCodeGeneratorError, 
+        raise SCons.Errors.StopError(SandeshCodeGeneratorError,
                                      'SandeshC code generation failed')
-            
+
 def SandeshSconsEnvCFunc(env):
     cbuild = Builder(action = Action(SandeshCBuilder, 'SandeshCBuilder $SOURCE -> $TARGETS'))
     env.Append(BUILDERS = {'SandeshC' : cbuild})
@@ -569,12 +569,12 @@ def SandeshPyBuilder(target, source, env):
     code = subprocess.call(env['SANDESH'] + ' --gen py:new_style -I controller/src/ -I tools -out ' +
                            py_opath + " " + source[0].path, shell=True)
     if code != 0:
-        raise SCons.Errors.StopError(SandeshCodeGeneratorError, 
+        raise SCons.Errors.StopError(SandeshCodeGeneratorError,
                                      'SandeshPy py code generation failed')
     code = subprocess.call(env['SANDESH'] + ' --gen html -I controller/src/ -I tools -out ' +
                            opath + " " + source[0].path, shell=True)
     if code != 0:
-        raise SCons.Errors.StopError(SandeshCodeGeneratorError, 
+        raise SCons.Errors.StopError(SandeshCodeGeneratorError,
                                      'SandeshPy html generation failed')
 
 def SandeshSconsEnvPyFunc(env):
@@ -673,7 +673,7 @@ def CreateIFMapBuilder(env):
                       src_suffix = '.xsd',
                       emitter = IFMapTargetGen)
     env.Append(BUILDERS = { 'IFMapAutogen' : builder})
-    
+
 def TypeBuilderCmd(source, target, env, for_signature):
     output = Basename(source[0].abspath)
     return './tools/generateds/generateDS.py -f -g type -o %s %s' % (output, source[0])
@@ -724,6 +724,8 @@ def UseSystemBoost(env):
     (distname, version, _) = env.GetPlatformInfo()
     exclude_dist = {
         'Ubuntu': '14.04',
+        'raspbian': '8',
+        'debian': '8',
         'centos': '7.0',
         'CentOS Linux': '7.0',
         'fedora': '20',
@@ -742,6 +744,8 @@ def UseSystemTBB(env):
     from distutils.version import LooseVersion
     systemTBBdict = {
         'Ubuntu': '14.04',
+        'raspbian': '8',
+        'debian': '8',
         'centos': '7.0',
         'CentOS Linux': '7.0',
         'fedora': '20',
@@ -913,7 +917,7 @@ def SetupBuildEnvironment(conf):
 
     distribution = env.GetPlatformInfo()[0]
 
-    if distribution == "Ubuntu":
+    if distribution in ["Ubuntu", "raspbian", "debian"]:
         env['PYTHON_INSTALL_OPT'] += '--install-layout=deb '
 
     if distribution == 'Darwin':
@@ -986,7 +990,7 @@ def SetupBuildEnvironment(conf):
     env.AddMethod(ExtractCFunc, "ExtractC")
     env.AddMethod(ExtractHeaderFunc, "ExtractHeader")
     env.AddMethod(ProtocGenDescFunc, "ProtocGenDesc")
-    env.AddMethod(ProtocGenCppFunc, "ProtocGenCpp")    
+    env.AddMethod(ProtocGenCppFunc, "ProtocGenCpp")
     env.AddMethod(SandeshGenOnlyCppFunc, "SandeshGenOnlyCpp")
     env.AddMethod(SandeshGenCppFunc, "SandeshGenCpp")
     env.AddMethod(SandeshGenCFunc, "SandeshGenC")
