@@ -924,7 +924,7 @@ def SetupBuildEnvironment(conf):
 
     AddOption('--target', dest = 'target',
               action='store',
-              choices = ['i686', 'x86_64'])
+              choices = ['i686', 'x86_64', 'armhf'])
 
     AddOption('--root', dest = 'install_root', action='store')
     AddOption('--prefix', dest = 'install_prefix', action='store')
@@ -1009,6 +1009,8 @@ def SetupBuildEnvironment(conf):
 
     if env.get('TARGET_MACHINE') == 'i686':
         env.Append(CCFLAGS = '-march=' + 'i686')
+    elif env.get('TARGET_MACHINE') == 'armhf' or platform.machine().startswith('arm'):
+        env.Append(CCFLAGS=['-DTBB_USE_GCC_BUILTINS=1', '-D__TBB_64BIT_ATOMICS=0'])
 
     env['TOP_BIN'] = '#build/bin'
     env['TOP_INCLUDE'] = '#build/include'
