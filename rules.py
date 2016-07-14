@@ -519,7 +519,7 @@ def SandeshSconsEnvDocFunc(env):
 
 def SandeshGenDocFunc(env, filepath, target=''):
     SandeshSconsEnvDocFunc(env)
-    suffixes = ['.html']
+    suffixes = ['.html', '_stats_tables.json']
     basename = Basename(filepath)
     path_split = basename.rsplit('/', 1)
     if len(path_split) == 2:
