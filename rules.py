@@ -536,7 +536,7 @@ def SandeshOnlyCppBuilder(target, source, env):
     html_cpp_name = os.path.join(target[0].dir.path, sname + '_html.cpp')
 
     wait_for_sandesh_install(env)
-    code = subprocess.call(env['SANDESH'] + ' --gen cpp -I controller/src/ -out ' +
+    code = subprocess.call(env['SANDESH'] + ' --gen cpp -I controller/src/ -I tools/ -out ' +
                            target[0].dir.path + " " + source[0].path, shell=True)
     if code != 0:
         raise SCons.Errors.StopError(SandeshCodeGeneratorError,
