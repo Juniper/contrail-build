@@ -519,7 +519,34 @@ def SandeshSconsEnvDocFunc(env):
 
 def SandeshGenDocFunc(env, filepath, target=''):
     SandeshSconsEnvDocFunc(env)
-    suffixes = ['.html']
+    suffixes = ['.html',
+                '_index.html',
+                '_logs.html',
+                '_logs.list.html',
+                '_logs.emerg.html',
+                '_logs.emerg.list.html',
+                '_logs.alert.html',
+                '_logs.alert.list.html',
+                '_logs.crit.html',
+                '_logs.crit.list.html',
+                '_logs.error.html',
+                '_logs.error.list.html',
+                '_logs.warn.html',
+                '_logs.warn.list.html',
+                '_logs.notice.html',
+                '_logs.notice.list.html',
+                '_logs.info.html',
+                '_logs.info.list.html',
+                '_logs.debug.html',
+                '_logs.debug.list.html',
+                '_logs.invalid.html',
+                '_logs.invalid.list.html',
+                '_uves.html',
+                '_uves.list.html',
+                '_traces.html',
+                '_traces.list.html',
+                '_introspect.html',
+                '_introspect.list.html']
     basename = Basename(filepath)
     path_split = basename.rsplit('/', 1)
     if len(path_split) == 2:
