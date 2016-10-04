@@ -761,6 +761,21 @@ def CreateIFMapBuilder(env):
                       emitter = IFMapTargetGen)
     env.Append(BUILDERS = { 'IFMapAutogen' : builder})
 
+def DeviceAPIBuilderCmd(source, target, env, for_signature):
+    output = Basename(source[0].abspath)
+    return './tools/generateds/generateDS.py -f -g device-api -o %s %s' % (output, source[0])
+
+def DeviceAPITargetGen(target, source, env):
+    suffixes = []
+    basename = Basename(source[0].abspath)
+    targets = map(lambda x: basename + x, suffixes)
+    return targets, source
+
+def CreateDeviceAPIBuilder(env):
+    builder = Builder(generator = DeviceAPIBuilderCmd,
+                      src_suffix = '.xsd')
+    env.Append(BUILDERS = { 'DeviceAPIAutogen' : builder})
+
 def TypeBuilderCmd(source, target, env, for_signature):
     output = Basename(source[0].abspath)
     return './tools/generateds/generateDS.py -f -g type -o %s %s' % (output, source[0])
@@ -1121,6 +1136,7 @@ def SetupBuildEnvironment(conf):
     env.AddMethod(ThriftGenPyFunc, "ThriftGenPy")
     CreateIFMapBuilder(env)
     CreateTypeBuilder(env)
+    CreateDeviceAPIBuilder(env)
 
     PyTestSuiteCovBuilder = Builder(action = PyTestSuiteCov)
     env.Append(BUILDERS = {'PyTestSuiteCov' : PyTestSuiteCovBuilder})
