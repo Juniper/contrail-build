@@ -479,7 +479,6 @@ class SandeshCodeGeneratorError(SandeshWarning):
 # SandeshGenDoc Methods
 def SandeshDocBuilder(target, source, env):
     opath = target[0].dir.path
-    wait_for_sandesh_install(env)
     code = subprocess.call(env['SANDESH'] + ' --gen doc -I controller/src/ -I tools -out '
                            + opath + " " + source[0].path, shell=True)
     if code != 0:
