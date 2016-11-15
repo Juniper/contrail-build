@@ -960,7 +960,7 @@ def determine_job_value():
 
 
 def SetupBuildEnvironment(conf):
-    AddOption('--optimization', dest = 'opt',
+    AddOption('--optimization', '--opt', dest = 'opt',
               action='store', default='debug',
               choices = ['debug', 'production', 'coverage', 'profile', 'valgrind'],
               help='optimization level: [debug|production|coverage|profile|valgrind]')
