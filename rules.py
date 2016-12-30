@@ -547,7 +547,6 @@ def SandeshGenDocFunc(env, filepath, target=''):
                 '_traces.doc.schema.json',
                 '_introspect.html',
                 '_introspect.doc.schema.json',
-                '_introspect_cli.json',
                 '_stats_tables.json']
     basename = Basename(filepath)
     path_split = basename.rsplit('/', 1)
