@@ -997,6 +997,7 @@ def SetupBuildEnvironment(conf):
     env['INSTALL_LIB'] = ''
     env['INSTALL_INIT'] = ''
     env['INSTALL_INITD'] = ''
+    env['INSTALL_SYSTEMD'] = ''
     env['INSTALL_CONF'] = ''
     env['INSTALL_EXAMPLE'] = ''
     env['PYTHON_INSTALL_OPT'] = ''
@@ -1009,6 +1010,7 @@ def SetupBuildEnvironment(conf):
         env['INSTALL_LIB'] = install_root
         env['INSTALL_INIT'] = install_root
         env['INSTALL_INITD'] = install_root
+        env['INSTALL_SYSTEMD'] = install_root
         env['INSTALL_CONF'] = install_root
         env['INSTALL_EXAMPLE'] = install_root
         env['INSTALL_DOC'] = install_root
@@ -1021,6 +1023,7 @@ def SetupBuildEnvironment(conf):
         env['INSTALL_LIB'] += install_prefix
         env['INSTALL_INIT'] += install_prefix
         env['INSTALL_INITD'] += install_prefix
+        env['INSTALL_SYSTEMD'] += install_prefix
         env['PYTHON_INSTALL_OPT'] += '--prefix ' + install_prefix + ' '
     elif install_root:
         env['INSTALL_BIN'] += '/usr'
@@ -1035,6 +1038,7 @@ def SetupBuildEnvironment(conf):
     env['INSTALL_LIB'] += '/lib'
     env['INSTALL_INIT'] += '/etc/init'
     env['INSTALL_INITD'] += '/etc/init.d'
+    env['INSTALL_SYSTEMD'] += '/etc/systemd/system'
     env['INSTALL_CONF'] += '/etc/contrail'
     env['INSTALL_EXAMPLE'] += '/usr/share/contrail'
     env['INSTALL_DOC'] += '/usr/share/doc'
