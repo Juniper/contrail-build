@@ -1091,25 +1091,25 @@ def SetupBuildEnvironment(conf):
 
     opt_level = env['OPT']
     if opt_level == 'production':
-        env.Append(CCFLAGS = '-g -O3')
+        env.Append(CCFLAGS = ['-g', '-O3', '-DRAPIDJSON_NAMESPACE=contrail_rapidjson'])
         env.Append(LINKFLAGS= ['-g'])
         env['TOP'] = '#build/production'
     elif opt_level == 'debug':
-        env.Append(CCFLAGS = ['-g', '-O0', '-DDEBUG'])
+        env.Append(CCFLAGS = ['-g', '-O0', '-DDEBUG', '-DRAPIDJSON_NAMESPACE=contrail_rapidjson'])
         env.Append(LINKFLAGS= ['-g'])
         env['TOP'] = '#build/debug'
     elif opt_level == 'profile':
         # Enable profiling through gprof
-        env.Append(CCFLAGS = ['-g', '-O3', '-DDEBUG', '-pg'])
+        env.Append(CCFLAGS = ['-g', '-O3', '-DDEBUG', '-pg', '-DRAPIDJSON_NAMESPACE=contrail_rapidjson'])
         env.Append(LINKFLAGS = ['-pg'])
         env['TOP'] = '#build/profile'
     elif opt_level == 'coverage':
-        env.Append(CCFLAGS = ['-g', '-O0', '--coverage'])
+        env.Append(CCFLAGS = ['-g', '-O0', '--coverage', '-DRAPIDJSON_NAMESPACE=contrail_rapidjson'])
         env.Append(LINKFLAGS = ['-g'])
         env['TOP'] = '#build/coverage'
         env.Append(LIBS = 'gcov')
     elif opt_level == 'valgrind':
-        env.Append(CCFLAGS = ['-g', '-O0', '-DDEBUG'])
+        env.Append(CCFLAGS = ['-g', '-O0', '-DDEBUG', '-DRAPIDJSON_NAMESPACE=contrail_rapidjson'])
         env.Append(LINKFLAGS= ['-g'])
         env['TOP'] = '#build/valgrind'
 
