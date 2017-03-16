@@ -1091,27 +1091,29 @@ def SetupBuildEnvironment(conf):
 
     opt_level = env['OPT']
     if opt_level == 'production':
-        env.Append(CCFLAGS = '-g -O3')
+        env.Append(CCFLAGS = '-O3')
         env.Append(LINKFLAGS= ['-g'])
         env['TOP'] = '#build/production'
     elif opt_level == 'debug':
-        env.Append(CCFLAGS = ['-g', '-O0', '-DDEBUG'])
+        env.Append(CCFLAGS = ['-O0', '-DDEBUG'])
         env.Append(LINKFLAGS= ['-g'])
         env['TOP'] = '#build/debug'
     elif opt_level == 'profile':
         # Enable profiling through gprof
-        env.Append(CCFLAGS = ['-g', '-O3', '-DDEBUG', '-pg'])
+        env.Append(CCFLAGS = ['-O3', '-DDEBUG', '-pg'])
         env.Append(LINKFLAGS = ['-pg'])
         env['TOP'] = '#build/profile'
     elif opt_level == 'coverage':
-        env.Append(CCFLAGS = ['-g', '-O0', '--coverage'])
-        env.Append(LINKFLAGS = ['-g'])
+        env.Append(CCFLAGS = ['-O0', '--coverage'])
         env['TOP'] = '#build/coverage'
         env.Append(LIBS = 'gcov')
     elif opt_level == 'valgrind':
-        env.Append(CCFLAGS = ['-g', '-O0', '-DDEBUG'])
-        env.Append(LINKFLAGS= ['-g'])
+        env.Append(CCFLAGS = ['-O0', '-DDEBUG'])
         env['TOP'] = '#build/valgrind'
+
+    if not "CONTRAIL_COMPILE_WITHOUT_SYMBOLS" in os.environ:
+        env.Append(CCFLAGS = '-g')
+        env.Append(LINKFLAGS = '-g')
 
     env.Append(BUILDERS = {'PyTestSuite': PyTestSuite })
     env.Append(BUILDERS = {'TestSuite': TestSuite })
