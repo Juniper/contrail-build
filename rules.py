@@ -690,6 +690,26 @@ def SandeshGenPyFunc(env, path, target='', gen_py=True):
     env.Depends(targets, '#build/bin/sandesh')
     return env.SandeshPy(targets, path)
 
+# Golang Methods for CNI
+def GoCniFunc(env, filepath, target=''):
+    # get dependencies
+    goenv = os.environ.copy()
+    goenv['GOROOT'] = env.Dir('#/third_party/go').abspath
+    goenv['GOPATH'] = env.Dir(env['TOP'] + '/container/cni/cni_go_deps').abspath
+    goenv['GOBIN'] = env.Dir(env['TOP'] + '/container/cni/bin').abspath
+    cni_path = env.Dir('#/' + env.Dir('.').srcnode().path).abspath
+    go_cmd = goenv['GOROOT'] + '/bin/go '
+    try:
+        cmd = 'cd ' + cni_path + ';'
+        cmd += go_cmd + 'get;'
+        cmd += 'rm -fR ' + goenv['GOPATH'] + \
+            '/src/github.com/containernetworking/cni/vendor/github.com/vishvananda;'
+        cmd += go_cmd + 'install'
+        code = subprocess.call(cmd, shell=True, env=goenv)
+    except Exception as e:
+        print str(e)
+    return env['TOP'] + env.File(filepath).path
+
 # ThriftGenCpp Methods
 ThriftServiceRe = re.compile(r'service\s+(\S+)\s*{', re.M)
 def ThriftServicesFunc(node):
@@ -1135,6 +1155,7 @@ def SetupBuildEnvironment(conf):
     env.AddMethod(SandeshGenCFunc, "SandeshGenC")
     env.AddMethod(SandeshGenPyFunc, "SandeshGenPy")
     env.AddMethod(SandeshGenDocFunc, "SandeshGenDoc")
+    env.AddMethod(GoCniFunc, "GoCniBuild")
     env.AddMethod(ThriftGenCppFunc, "ThriftGenCpp")
     ThriftSconsEnvPyFunc(env)
     env.AddMethod(ThriftGenPyFunc, "ThriftGenPy")
