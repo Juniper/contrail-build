@@ -708,7 +708,7 @@ def GoCniFunc(env, filepath, target=''):
         code = subprocess.call(cmd, shell=True, env=goenv)
     except Exception as e:
         print str(e)
-    return env['TOP'] + env.File(filepath).path
+    return env['TOP'] + '/container/cni/bin/' + filepath
 
 # ThriftGenCpp Methods
 ThriftServiceRe = re.compile(r'service\s+(\S+)\s*{', re.M)
