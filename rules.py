@@ -111,6 +111,8 @@ def RunUnitTest(env, target, source, timeout = 300):
         # https://code.google.com/p/gperftools/issues/detail?id=497
         ShEnv['LD_BIND_NOW'] = '1'
 
+    if 'CONCURRENCY_CHECK_ENABLE' not in ShEnv:
+        ShEnv['CONCURRENCY_CHECK_ENABLE'] = 'true'
     proc = subprocess.Popen(cmd, stdout=logfile, stderr=logfile, env=ShEnv)
 
     # 60 second timeout
