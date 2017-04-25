@@ -1021,6 +1021,7 @@ def SetupBuildEnvironment(conf):
     env['INSTALL_INITD'] = ''
     env['INSTALL_SYSTEMD'] = ''
     env['INSTALL_CONF'] = ''
+    env['INSTALL_SNMP_CONF'] = ''
     env['INSTALL_EXAMPLE'] = ''
     env['PYTHON_INSTALL_OPT'] = ''
     env['INSTALL_DOC'] = ''
@@ -1034,6 +1035,7 @@ def SetupBuildEnvironment(conf):
         env['INSTALL_INITD'] = install_root
         env['INSTALL_SYSTEMD'] = install_root
         env['INSTALL_CONF'] = install_root
+        env['INSTALL_SNMP_CONF'] = install_root
         env['INSTALL_EXAMPLE'] = install_root
         env['INSTALL_DOC'] = install_root
         env['PYTHON_INSTALL_OPT'] = '--root ' + install_root + ' '
@@ -1062,6 +1064,7 @@ def SetupBuildEnvironment(conf):
     env['INSTALL_INITD'] += '/etc/init.d'
     env['INSTALL_SYSTEMD'] += '/lib/systemd/system'
     env['INSTALL_CONF'] += '/etc/contrail'
+    env['INSTALL_SNMP_CONF'] += '/etc/snmp'
     env['INSTALL_EXAMPLE'] += '/usr/share/contrail'
     env['INSTALL_DOC'] += '/usr/share/doc'
 
