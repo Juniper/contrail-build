@@ -1128,6 +1128,7 @@ def SetupBuildEnvironment(conf):
     env.AddMethod(ExtractCppFunc, "ExtractCpp")
     env.AddMethod(ExtractCFunc, "ExtractC")
     env.AddMethod(ExtractHeaderFunc, "ExtractHeader")
+    env.AddMethod(GetBuildVersion, "GetBuildVersion")
     env.AddMethod(ProtocGenDescFunc, "ProtocGenDesc")
     env.AddMethod(ProtocGenCppFunc, "ProtocGenCpp")
     env.AddMethod(SandeshGenOnlyCppFunc, "SandeshGenOnlyCpp")
