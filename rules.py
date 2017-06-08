@@ -703,9 +703,15 @@ def GoCniFunc(env, filepath, target=''):
     go_cmd = goenv['GOROOT'] + '/bin/go '
     try:
         cmd = 'cd ' + cni_path + ';'
-        cmd += go_cmd + 'get;'
+        cmd += go_cmd + 'get github.com/docker/docker/client;'
+        cmd += go_cmd + 'get github.com/natefinch/lumberjack;'
+        cmd += go_cmd + 'get github.com/vishvananda/netlink;'
+        cmd += go_cmd + 'get github.com/containernetworking/cni;'
+        cmd += go_cmd + 'get github.com/containernetworking/plugins;'
         cmd += 'rm -fR ' + goenv['GOPATH'] + \
-            '/src/github.com/containernetworking/cni/vendor/github.com/vishvananda;'
+            '/src/github.com/containernetworking/plugins/vendor/github.com/vishvananda;'
+        cmd += 'rm -fR ' + goenv['GOPATH'] + \
+            '/src/github.com/containernetworking/plugins/vendor/github.com/containernetworking;'
         cmd += go_cmd + 'install'
         code = subprocess.call(cmd, shell=True, env=goenv)
     except Exception as e:
