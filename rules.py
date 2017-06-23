@@ -697,21 +697,12 @@ def GoCniFunc(env, filepath, target=''):
     # get dependencies
     goenv = os.environ.copy()
     goenv['GOROOT'] = env.Dir('#/third_party/go').abspath
-    goenv['GOPATH'] = env.Dir(env['TOP'] + '/container/cni/cni_go_deps').abspath
+    goenv['GOPATH'] = env.Dir('#/third_party/cni/cni_go_deps').abspath
     goenv['GOBIN'] = env.Dir(env['TOP'] + '/container/cni/bin').abspath
     cni_path = env.Dir('#/' + env.Dir('.').srcnode().path).abspath
     go_cmd = goenv['GOROOT'] + '/bin/go '
     try:
         cmd = 'cd ' + cni_path + ';'
-        cmd += go_cmd + 'get github.com/docker/docker/client;'
-        cmd += go_cmd + 'get github.com/natefinch/lumberjack;'
-        cmd += go_cmd + 'get github.com/vishvananda/netlink;'
-        cmd += go_cmd + 'get github.com/containernetworking/cni;'
-        cmd += go_cmd + 'get github.com/containernetworking/plugins;'
-        cmd += 'rm -fR ' + goenv['GOPATH'] + \
-            '/src/github.com/containernetworking/plugins/vendor/github.com/vishvananda;'
-        cmd += 'rm -fR ' + goenv['GOPATH'] + \
-            '/src/github.com/containernetworking/plugins/vendor/github.com/containernetworking;'
         cmd += go_cmd + 'install'
         code = subprocess.call(cmd, shell=True, env=goenv)
     except Exception as e:
