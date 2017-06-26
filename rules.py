@@ -697,7 +697,7 @@ def GoCniFunc(env, filepath, target=''):
     # get dependencies
     goenv = os.environ.copy()
     goenv['GOROOT'] = env.Dir('#/third_party/go').abspath
-    goenv['GOPATH'] = env.Dir('#/third_party/cni/cni_go_deps').abspath
+    goenv['GOPATH'] = env.Dir('#/third_party/cni_go_deps').abspath
     goenv['GOBIN'] = env.Dir(env['TOP'] + '/container/cni/bin').abspath
     cni_path = env.Dir('#/' + env.Dir('.').srcnode().path).abspath
     go_cmd = goenv['GOROOT'] + '/bin/go '
