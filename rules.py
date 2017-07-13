@@ -246,7 +246,7 @@ def UnitTest(env, name, sources, **kwargs):
     return test_exe_list
 
 def GenerateBuildInfoCode(env, target, source, path):
-    env.Command(target=target, source=source, action=BuildInfoAction)
+    BuildInfoAction(env, target, source, path)
     return
 
 # If contrail-controller (i.e., #controller/) is present, determine
@@ -306,7 +306,7 @@ def GetBuildInfoData(env, target, source):
 
 
 def BuildInfoAction(env, target, source):
-    build_dir = target[0].dir.path
+    build_dir = os.getcwd()
     jsdata = GetBuildInfoData(env, target, source)
 
     h_code = """
