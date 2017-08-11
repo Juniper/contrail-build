@@ -245,8 +245,16 @@ def UnitTest(env, name, sources, **kwargs):
         for t in test_exe_list: t.attributes.skip_run = True
     return test_exe_list
 
+
+# we are not interested in source files for the dependency, but rather
+# to force rebuilds. Pass an empty source to the env.Command, to break
+# circular dependencies.
+# XXX: This should be rewritten using SCons Value nodes (for generating
+# build info itself) and Builder for managing targets.
 def GenerateBuildInfoCode(env, target, source, path):
-    env.Command(target=target, source=source, action=BuildInfoAction)
+    env.AlwaysBuild(
+        env.Command(target=target, source, action=BuildInfoAction)
+    )
     return
 
 # If contrail-controller (i.e., #controller/) is present, determine
