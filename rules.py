@@ -15,6 +15,7 @@ import sys
 import time
 import commands
 import platform
+import getpass
 
 def GetPlatformInfo(env):
     '''
@@ -158,7 +159,7 @@ def setup_venv(env, target, venv_name, path=None):
         if ws_link: p = ws_link + "/build/" + env['OPT']
         else: p = env.Dir(env['TOP']).abspath
 
-    tdir = '/tmp/cache/%s/systemless_test' % os.environ['USER']
+    tdir = '/tmp/cache/%s/systemless_test' % getpass.getuser()
     shell_cmd = ' && '.join ([
         'cd %s' % p,
         'mkdir %s' % tdir,
@@ -195,7 +196,7 @@ def venv_add_pip_pkg(env, v, pkg_list):
         if name[0] != '/':
             targets.append(name)
 
-    tdir = '/tmp/cache/%s/systemless_test' % os.environ['USER']
+    tdir = '/tmp/cache/%s/systemless_test' % getpass.getuser()
     cmd = env.Command(targets, None, '/bin/bash -c "source %s/bin/activate; pip install --download-cache=%s %s"' %
                       (venv._path, tdir, ' '.join(pkg_list)))
     env.AlwaysBuild(cmd)
@@ -235,9 +236,8 @@ def UnitTest(env, name, sources, **kwargs):
     test_env = env.Clone()
 
     # Do not link with tcmalloc when running under valgrind/coverage env.
-    if sys.platform != 'darwin' and env.get('OPT') != 'coverage' and \
-           not env['ENV'].has_key('NO_HEAPCHECK') and \
-           env.get('OPT') != 'valgrind':
+    if sys.platform not in ['darwin', 'win32'] and env.get('OPT') != 'coverage' and \
+           not env['ENV'].has_key('NO_HEAPCHECK') and env.get('OPT') != 'valgrind':
         test_env.Append(LIBPATH = '#/build/lib')
         test_env.Append(LIBS = ['tcmalloc'])
     test_exe_list = test_env.Program(name, sources)
@@ -363,7 +363,7 @@ def GenerateBuildInfoPyCode(env, target, source, path):
     import subprocess
 
     try:
-        build_user = os.environ['USER']
+        build_user = getpass.getuser()
     except KeyError:
         build_user = "unknown"
 
@@ -494,7 +494,11 @@ def ProtocGenCppFunc(env, file):
 def wait_for_sandesh_install(env):
     rc = 0
     while (rc != 1):
-        rc = os.system(env['SANDESH'] + ' -version >/dev/null 2>/dev/null') >> 8
+        with open(os.devnull, "w") as f:
+            try:
+                rc = subprocess.call([env['SANDESH'], '-version'], stdout=f, stderr=f)
+            except Exception as e:
+                rc = 0
         if (rc != 1):
             print 'scons: warning: sandesh -version returned %d, retrying' % rc
             time.sleep(1)
@@ -557,7 +561,7 @@ def SandeshGenDocFunc(env, filepath, target=''):
     else:
         filename = path_split[0]
     targets = map(lambda suffix: target + 'gen-doc/' + filename + suffix, suffixes)
-    env.Depends(targets, '#build/bin/sandesh')
+    env.Depends(targets, '#build/bin/sandesh' + env['PROGSUFFIX'])
     return env.SandeshDoc(targets, filepath)
 
 # SandeshGenOnlyCpp Methods
@@ -571,7 +575,8 @@ def SandeshOnlyCppBuilder(target, source, env):
     if code != 0:
         raise SCons.Errors.StopError(SandeshCodeGeneratorError,
                                      'SandeshOnlyCpp code generation failed')
-    os.system("echo \"int " + sname + "_marker = 0;\" >> " + html_cpp_name)
+    with open(html_cpp_name, 'a') as html_cpp_file:
+        html_cpp_file.write('int ' + sname + '_marker = 0;\n')
 
 def SandeshSconsEnvOnlyCppFunc(env):
     onlycppbuild = Builder(action = Action(SandeshOnlyCppBuilder,'SandeshOnlyCppBuilder $SOURCE -> $TARGETS'))
@@ -586,7 +591,7 @@ def SandeshGenOnlyCppFunc(env, file):
         '_html.cpp']
     basename = Basename(file)
     targets = map(lambda suffix: basename + suffix, suffixes)
-    env.Depends(targets, '#build/bin/sandesh')
+    env.Depends(targets, '#build/bin/sandesh' + env['PROGSUFFIX'])
     return env.SandeshOnlyCpp(targets, file)
 
 # SandeshGenCpp Methods
@@ -606,10 +611,14 @@ def SandeshCppBuilder(target, source, env):
     if not env.Detect('xxd'):
         raise SCons.Errors.StopError(SandeshCodeGeneratorError,
                                      'xxd not detected on system')
-    os.system("echo \"namespace {\"" + " >> " + cname)
-    os.system("(cd " + opath + " ; xxd -i " + hname + " >> " + os.path.basename(cname) + " )")
-    os.system("echo \"}\"" + " >> " + cname)
-    os.system("cat " + tname + " >> " + cname)
+    with open(cname, 'a') as cfile:
+        cfile.write('namespace {\n')
+    subprocess.call('xxd -i ' + hname + ' >> ' + os.path.basename(cname), shell=True, cwd=opath)
+    with open(cname, 'a') as cfile:
+        cfile.write('}\n')
+        with open(tname, 'r') as tfile:
+            for line in tfile:
+                cfile.write(line)
 
 def SandeshSconsEnvCppFunc(env):
     cppbuild = Builder(action = Action(SandeshCppBuilder, 'SandeshCppBuilder $SOURCE -> $TARGETS'))
@@ -624,7 +633,7 @@ def SandeshGenCppFunc(env, file):
         '_html.cpp']
     basename = Basename(file)
     targets = map(lambda suffix: basename + suffix, suffixes)
-    env.Depends(targets, '#build/bin/sandesh')
+    env.Depends(targets, '#build/bin/sandesh' + env['PROGSUFFIX'])
     return env.SandeshCpp(targets, file)
 
 # SandeshGenC Methods
@@ -647,7 +656,7 @@ def SandeshGenCFunc(env, file):
     suffixes = ['_types.h', '_types.c']
     basename = Basename(file)
     targets = map(lambda suffix: 'gen-c/' + basename + suffix, suffixes)
-    env.Depends(targets, '#build/bin/sandesh')
+    env.Depends(targets, '#build/bin/sandesh' + env['PROGSUFFIX'])
     return env.SandeshC(targets, file)
 
 # SandeshGenPy Methods
@@ -689,7 +698,7 @@ def SandeshGenPyFunc(env, path, target='', gen_py=True):
     else:
         targets = map(lambda module: target + mod_dir + module, modules)
 
-    env.Depends(targets, '#build/bin/sandesh')
+    env.Depends(targets, '#build/bin/sandesh' + env['PROGSUFFIX'])
     return env.SandeshPy(targets, path)
 
 # Golang Methods for CNI
@@ -717,7 +726,7 @@ def ThriftServicesFunc(node):
 
 def ThriftSconsEnvFunc(env, async):
     opath = env.Dir('.').abspath
-    thriftcmd = env.Dir(env['TOP_BIN']).abspath + '/thrift'
+    thriftcmd = os.path.join(env.Dir(env['TOP_BIN']).abspath, 'thrift')
     if async:
         lstr = thriftcmd + ' --gen cpp:async -o ' + opath + ' $SOURCE'
     else:
@@ -734,13 +743,13 @@ def ThriftGenCppFunc(env, file, async):
     service_cfiles = map(lambda s: 'gen-cpp/' + s + '.cpp', services)
     service_hfiles = map(lambda s: 'gen-cpp/' + s + '.h', services)
     targets = base_files + service_cfiles + service_hfiles
-    env.Depends(targets, '#/build/bin/thrift')
+    env.Depends(targets, '#build/bin/thrift' + env['PROGSUFFIX'])
     return env.ThriftCpp(targets, file)
 
 def ThriftPyBuilder(source, target, env, for_signature):
     output_dir = os.path.dirname(os.path.dirname(str(target[0])))
-    return ('%s/thrift --gen py:new_style,utf8strings -I src/ -out %s %s' %
-            (env.Dir(env['TOP_BIN']), output_dir, source[0]))
+    return ('%s --gen py:new_style,utf8strings -I src/ -out %s %s' %
+            (os.path.join(env.Dir(env['TOP_BIN']).abspath, 'thrift'), output_dir, source[0]))
 
 def ThriftSconsEnvPyFunc(env):
     pybuild = Builder(generator = ThriftPyBuilder)
@@ -760,12 +769,12 @@ def ThriftGenPyFunc(env, path, target=''):
     if target[-1] != '/':
         target += '/'
     targets = map(lambda module: target + 'gen_py/' + mod_dir + module, modules)
-    env.Depends(targets, '#/build/bin/thrift')
+    env.Depends(targets, '#build/bin/thrift' + env['PROGSUFFIX'])
     return env.ThriftPy(targets, path)
 
 def IFMapBuilderCmd(source, target, env, for_signature):
     output = Basename(source[0].abspath)
-    return './tools/generateds/generateDS.py -f -g ifmap-backend -o %s %s' % (output, source[0])
+    return '%s -f -g ifmap-backend -o %s %s' % (env.File('#tools/generateds/generateDS.py').abspath, output, source[0])
 
 def IFMapTargetGen(target, source, env):
     suffixes = ['_types.h', '_types.cc', '_parser.cc',
@@ -797,7 +806,7 @@ def CreateDeviceAPIBuilder(env):
 
 def TypeBuilderCmd(source, target, env, for_signature):
     output = Basename(source[0].abspath)
-    return './tools/generateds/generateDS.py -f -g type -o %s %s' % (output, source[0])
+    return '%s -f -g type -o %s %s' % (env.File('#tools/generateds/generateDS.py').abspath, output, source[0])
 
 def TypeTargetGen(target, source, env):
     suffixes = ['_types.h', '_types.cc', '_parser.cc']
@@ -900,7 +909,7 @@ def UseCassandraCql(env):
     return False
 
 def CppDisableExceptions(env):
-    if not UseSystemBoost(env):
+    if not UseSystemBoost(env) and sys.platform != 'win32':
         env.AppendUnique(CCFLAGS='-fno-exceptions')
 
 def CppEnableExceptions(env):
@@ -1092,14 +1101,11 @@ def SetupBuildEnvironment(conf):
         env['PYTESTARG'] = None
 
     # Store path to sandesh compiler in the env
-    env['SANDESH'] = os.path.join(env.Dir(env['TOP_BIN']).path, 'sandesh')
+    env['SANDESH'] = os.path.join(env.Dir(env['TOP_BIN']).path, 'sandesh' + env['PROGSUFFIX'])
 
     # Store the hostname in env.
-    try:
-        build_host = env['HOSTNAME'] if 'HOSTNAME' in env else os.environ['HOSTNAME']
-    except KeyError:
-        build_host = os.uname()[1]
-    env['HOSTNAME'] = build_host
+    if 'HOSTNAME' not in env:
+        env['HOSTNAME'] = platform.node()
 
     # Store repo projects in the environment
     proc = subprocess.Popen('repo list', stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell='True')
@@ -1111,12 +1117,31 @@ def SetupBuildEnvironment(conf):
         repo_list[path] = repo
     env['REPO_PROJECTS'] = repo_list
 
+    if sys.platform == 'win32':
+        env.Append(CCFLAGS = '/Iwindows')
+        env.Append(CCFLAGS = '/D_WINDOWS')
+
+        # Set Windows Server 2016 as target system
+        env.Append(CCFLAGS = '/D_WIN32_WINNT=0x0A00')
+        # Set exception handling model
+        env.Append(CCFLAGS = '/EHsc')
+        # Disable min/max macros to avoid conflicts
+        env.Append(CCFLAGS = '/DNOMINMAX')
+        # Disable MSVC paranoid warnings
+        env.Append(CCFLAGS = ['/D_SCL_SECURE_NO_WARNINGS', '/D_CRT_SECURE_NO_WARNINGS'])
+        # Stop Windows.h from including a lot of useless header files
+        env.Append(CCFLAGS = ['/DWIN32_LEAN_AND_MEAN'])
+
     opt_level = env['OPT']
     if opt_level == 'production':
         env.Append(CCFLAGS = '-O3')
         env['TOP'] = '#build/production'
     elif opt_level == 'debug':
-        env.Append(CCFLAGS = ['-O0', '-DDEBUG'])
+        if sys.platform == 'win32':
+            # Enable runtime checks and disable optimization
+            env.Append(CCFLAGS = '/RTC1')
+        else:
+            env.Append(CCFLAGS = ['-O0', '-DDEBUG'])
         env['TOP'] = '#build/debug'
     elif opt_level == 'profile':
         # Enable profiling through gprof
@@ -1132,8 +1157,18 @@ def SetupBuildEnvironment(conf):
         env['TOP'] = '#build/valgrind'
 
     if not "CONTRAIL_COMPILE_WITHOUT_SYMBOLS" in os.environ:
-        env.Append(CCFLAGS = '-g')
-        env.Append(LINKFLAGS = '-g')
+        if sys.platform == 'win32':
+            # Enable multithreaded debug dll build and define _DEBUG
+            env.Append(CCFLAGS = '/MDd')
+            # Enable full symbolic debugging information
+            env.Append(CCFLAGS = '/Z7')
+            env.Append(LINKFLAGS= ['/DEBUG'])
+        else:
+            env.Append(CCFLAGS = '-g')
+            env.Append(LINKFLAGS = '-g')
+    elif sys.platform == 'win32':
+        # Enable multithreaded dll build
+        env.Append(CCFLAGS = '/MD')
 
     env.Append(BUILDERS = {'PyTestSuite': PyTestSuite })
     env.Append(BUILDERS = {'TestSuite': TestSuite })
