@@ -577,13 +577,25 @@ def SandeshSconsEnvOnlyCppFunc(env):
     onlycppbuild = Builder(action = Action(SandeshOnlyCppBuilder,'SandeshOnlyCppBuilder $SOURCE -> $TARGETS'))
     env.Append(BUILDERS = {'SandeshOnlyCpp' : onlycppbuild})
 
+def SandeshGenOnlyCppWithSkeletorFunc(env, file):
+    suffixes = ['_types.h',
+        '_types.cpp',
+        '_constants.h',
+        '_constants.cpp',
+        '_request_skeleton.cpp',
+        '_html.cpp']
+    return SandeshGenOnlyCppFuncBase(env, file, suffixes)
+
 def SandeshGenOnlyCppFunc(env, file):
-    SandeshSconsEnvOnlyCppFunc(env)
     suffixes = ['_types.h',
         '_types.cpp',
         '_constants.h',
         '_constants.cpp',
         '_html.cpp']
+    return SandeshGenOnlyCppFuncBase(env, file, suffixes)
+
+def SandeshGenOnlyCppFuncBase(env, file, suffixes):
+    SandeshSconsEnvOnlyCppFunc(env)
     basename = Basename(file)
     targets = map(lambda suffix: basename + suffix, suffixes)
     env.Depends(targets, '#build/bin/sandesh')
@@ -615,13 +627,25 @@ def SandeshSconsEnvCppFunc(env):
     cppbuild = Builder(action = Action(SandeshCppBuilder, 'SandeshCppBuilder $SOURCE -> $TARGETS'))
     env.Append(BUILDERS = {'SandeshCpp' : cppbuild})
 
+def SandeshGenCppWithSkeletorFunc(env, file):
+    suffixes = ['_types.h',
+        '_types.cpp',
+        '_constants.h',
+        '_constants.cpp',
+        '_request_skeleton.cpp',
+        '_html.cpp']
+    return SandeshGenCppFuncBase(env, file, suffixes)
+
 def SandeshGenCppFunc(env, file):
-    SandeshSconsEnvCppFunc(env)
     suffixes = ['_types.h',
         '_types.cpp',
         '_constants.h',
         '_constants.cpp',
         '_html.cpp']
+    return SandeshGenCppFuncBase(env, file, suffixes)
+
+def SandeshGenCppFuncBase(env, file, suffixes):
+    SandeshSconsEnvCppFunc(env)
     basename = Basename(file)
     targets = map(lambda suffix: basename + suffix, suffixes)
     env.Depends(targets, '#build/bin/sandesh')
@@ -1155,6 +1179,7 @@ def SetupBuildEnvironment(conf):
     env.AddMethod(ProtocGenCppFunc, "ProtocGenCpp")
     env.AddMethod(SandeshGenOnlyCppFunc, "SandeshGenOnlyCpp")
     env.AddMethod(SandeshGenCppFunc, "SandeshGenCpp")
+    env.AddMethod(SandeshGenCppWithSkeletorFunc, "SandeshGenCppWithSkeletor")
     env.AddMethod(SandeshGenCFunc, "SandeshGenC")
     env.AddMethod(SandeshGenPyFunc, "SandeshGenPy")
     env.AddMethod(SandeshGenDocFunc, "SandeshGenDoc")
