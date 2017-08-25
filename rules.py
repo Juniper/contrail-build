@@ -577,13 +577,19 @@ def SandeshSconsEnvOnlyCppFunc(env):
     onlycppbuild = Builder(action = Action(SandeshOnlyCppBuilder,'SandeshOnlyCppBuilder $SOURCE -> $TARGETS'))
     env.Append(BUILDERS = {'SandeshOnlyCpp' : onlycppbuild})
 
-def SandeshGenOnlyCppFunc(env, file):
+def SandeshGenOnlyCppFunc(env, file, extra_suffixes=[]):
     SandeshSconsEnvOnlyCppFunc(env)
     suffixes = ['_types.h',
         '_types.cpp',
         '_constants.h',
         '_constants.cpp',
         '_html.cpp']
+
+    if extra_suffixes:
+        if isinstance(extra_suffixes, basestring):
+            extra_suffixes = [ extra_suffixes ]
+        suffixes += extra_suffixes
+
     basename = Basename(file)
     targets = map(lambda suffix: basename + suffix, suffixes)
     env.Depends(targets, '#build/bin/sandesh')
@@ -615,13 +621,19 @@ def SandeshSconsEnvCppFunc(env):
     cppbuild = Builder(action = Action(SandeshCppBuilder, 'SandeshCppBuilder $SOURCE -> $TARGETS'))
     env.Append(BUILDERS = {'SandeshCpp' : cppbuild})
 
-def SandeshGenCppFunc(env, file):
+def SandeshGenCppFunc(env, file, extra_suffixes=[]):
     SandeshSconsEnvCppFunc(env)
     suffixes = ['_types.h',
         '_types.cpp',
         '_constants.h',
         '_constants.cpp',
         '_html.cpp']
+
+    if extra_suffixes:
+        if isinstance(extra_suffixes, basestring):
+            extra_suffixes = [ extra_suffixes ]
+        suffixes += extra_suffixes
+
     basename = Basename(file)
     targets = map(lambda suffix: basename + suffix, suffixes)
     env.Depends(targets, '#build/bin/sandesh')
