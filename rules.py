@@ -615,13 +615,18 @@ def SandeshSconsEnvCppFunc(env):
     cppbuild = Builder(action = Action(SandeshCppBuilder, 'SandeshCppBuilder $SOURCE -> $TARGETS'))
     env.Append(BUILDERS = {'SandeshCpp' : cppbuild})
 
-def SandeshGenCppFunc(env, file):
-    SandeshSconsEnvCppFunc(env)
+def SandeshGenCppFunc(env, file, extra_suffixes = None):
     suffixes = ['_types.h',
         '_types.cpp',
         '_constants.h',
         '_constants.cpp',
         '_html.cpp']
+
+    if isinstance(extra_suffixes, basestring):
+        extra_suffixes = [ extra_suffixes ]
+    suffixes += extra_suffixes
+
+    SandeshSconsEnvCppFunc(env)
     basename = Basename(file)
     targets = map(lambda suffix: basename + suffix, suffixes)
     env.Depends(targets, '#build/bin/sandesh')
