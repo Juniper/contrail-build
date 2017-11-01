@@ -516,7 +516,7 @@ class SandeshCodeGeneratorError(SandeshWarning):
 def SandeshDocBuilder(target, source, env):
     opath = target[0].dir.path
     wait_for_sandesh_install(env)
-    code = subprocess.call(env['SANDESH'] + ' --gen doc -I controller/src/ -I tools -out '
+    code = subprocess.call(env['SANDESH'] + ' --gen doc -I controller/src/ -I src/contrail-common -out '
                            + opath + " " + source[0].path, shell=True)
     if code != 0:
         raise SCons.Errors.StopError(SandeshCodeGeneratorError,
@@ -573,7 +573,7 @@ def SandeshOnlyCppBuilder(target, source, env):
     html_cpp_name = os.path.join(target[0].dir.path, sname + '_html.cpp')
 
     wait_for_sandesh_install(env)
-    code = subprocess.call(env['SANDESH'] + ' --gen cpp -I controller/src/ -I tools/ -out ' +
+    code = subprocess.call(env['SANDESH'] + ' --gen cpp -I controller/src/ -I src/contrail-common -out ' +
                            target[0].dir.path + " " + source[0].path, shell=True)
     if code != 0:
         raise SCons.Errors.StopError(SandeshCodeGeneratorError,
@@ -608,7 +608,7 @@ def SandeshCppBuilder(target, source, env):
     sname = os.path.join(opath, os.path.splitext(source[0].name)[0])
 
     wait_for_sandesh_install(env)
-    code = subprocess.call(env['SANDESH'] + ' --gen cpp --gen html -I controller/src/ -I tools -out '
+    code = subprocess.call(env['SANDESH'] + ' --gen cpp --gen html -I controller/src/ -I src/contrail-common -out '
                            + opath + " " + source[0].path, shell=True)
     if code != 0:
         raise SCons.Errors.StopError(SandeshCodeGeneratorError,
@@ -674,12 +674,12 @@ def SandeshPyBuilder(target, source, env):
     opath = target[0].dir.path
     py_opath = os.path.dirname(opath)
     wait_for_sandesh_install(env)
-    code = subprocess.call(env['SANDESH'] + ' --gen py:new_style -I controller/src/ -I tools -out ' +
+    code = subprocess.call(env['SANDESH'] + ' --gen py:new_style -I controller/src/ -I src/contrail-common -out ' +
                            py_opath + " " + source[0].path, shell=True)
     if code != 0:
         raise SCons.Errors.StopError(SandeshCodeGeneratorError,
                                      'SandeshPy py code generation failed')
-    code = subprocess.call(env['SANDESH'] + ' --gen html -I controller/src/ -I tools -out ' +
+    code = subprocess.call(env['SANDESH'] + ' --gen html -I controller/src/ -I src/contrail-common -out ' +
                            opath + " " + source[0].path, shell=True)
     if code != 0:
         raise SCons.Errors.StopError(SandeshCodeGeneratorError,
