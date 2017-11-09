@@ -626,8 +626,7 @@ def SandeshCppBuilder(target, source, env):
                                      'xxd not detected on system')
     with open(cname, 'a') as cfile:
         cfile.write('namespace {\n')
-    subprocess.call('xxd -i ' + hname + ' >> ' + os.path.basename(cname), shell=True, cwd=opath)
-    with open(cname, 'a') as cfile:
+        subprocess.call(['xxd', '-i', hname], stdout=cfile, cwd=opath)
         cfile.write('}\n')
         with open(tname, 'r') as tfile:
             for line in tfile:
@@ -1137,7 +1136,7 @@ def SetupBuildEnvironment(conf):
     env['REPO_PROJECTS'] = repo_list
 
     if sys.platform == 'win32':
-        env.Append(CCFLAGS = '/Iwindows')
+        env.Append(CCFLAGS = '/Iwindows/inc')
         env.Append(CCFLAGS = '/D_WINDOWS')
 
         # Set Windows Server 2016 as target system
@@ -1149,16 +1148,26 @@ def SetupBuildEnvironment(conf):
         # Disable MSVC paranoid warnings
         env.Append(CCFLAGS = ['/D_SCL_SECURE_NO_WARNINGS', '/D_CRT_SECURE_NO_WARNINGS'])
         # Stop Windows.h from including a lot of useless header files
-        env.Append(CCFLAGS = ['/DWIN32_LEAN_AND_MEAN'])
+        env.Append(CCFLAGS = '/DWIN32_LEAN_AND_MEAN')
 
     opt_level = env['OPT']
     if opt_level == 'production':
-        env.Append(CCFLAGS = '-O3')
+        if sys.platform == 'win32':
+            # Enable full compiler optimization
+            env.Append(CCFLAGS = '/Ox')
+            # Enable multithreaded release dll build
+            env.Append(CCFLAGS = '/MD')
+            # Enable linker whole program optimization
+            env.Append(LINKFLAGS = '/LTCG')
+        else:
+            env.Append(CCFLAGS = '-O3')
         env['TOP'] = '#build/production'
     elif opt_level == 'debug':
         if sys.platform == 'win32':
             # Enable runtime checks and disable optimization
             env.Append(CCFLAGS = '/RTC1')
+            # Enable multithreaded debug dll build and define _DEBUG
+            env.Append(CCFLAGS = '/MDd')
         else:
             env.Append(CCFLAGS = ['-O0', '-DDEBUG'])
         env['TOP'] = '#build/debug'
@@ -1177,17 +1186,12 @@ def SetupBuildEnvironment(conf):
 
     if not "CONTRAIL_COMPILE_WITHOUT_SYMBOLS" in os.environ:
         if sys.platform == 'win32':
-            # Enable multithreaded debug dll build and define _DEBUG
-            env.Append(CCFLAGS = '/MDd')
             # Enable full symbolic debugging information
             env.Append(CCFLAGS = '/Z7')
-            env.Append(LINKFLAGS= ['/DEBUG'])
+            env.Append(LINKFLAGS = '/DEBUG')
         else:
             env.Append(CCFLAGS = '-g')
             env.Append(LINKFLAGS = '-g')
-    elif sys.platform == 'win32':
-        # Enable multithreaded dll build
-        env.Append(CCFLAGS = '/MD')
 
     env.Append(BUILDERS = {'PyTestSuite': PyTestSuite })
     env.Append(BUILDERS = {'TestSuite': TestSuite })
