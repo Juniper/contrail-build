@@ -439,6 +439,7 @@ def ProtocDescBuilder(target, source, env):
         str(target[0]) + ' --include_imports ' + \
         ' --proto_path=controller/src/' + \
         ' --proto_path=/usr/include/ ' + \
+        ' --proto_path=src/contrail-analytics/contrail-collector/ ' + \
         str(source[0])
     print protoc_cmd
     code = subprocess.call(protoc_cmd, shell=True)
@@ -465,10 +466,13 @@ def ProtocCppBuilder(target, source, env):
             'protoc Compiler not detected on system')
     protoc = env.WhereIs('protoc')
     protoc_cmd = protoc + ' --proto_path=/usr/include/ ' + \
+        ' --proto_path=src/contrail-analytics/contrail-collector/ ' + \
         '--proto_path=controller/src/ --proto_path=' + \
-        spath + ' --cpp_out=' + str(env.Dir(env['TOP'])) + ' ' + \
+        spath + ' --cpp_out=' + str(env.Dir(env['TOP'])) + '/analytics' + ' ' + \
         str(source[0])
+    #fix static coding of analytics
     print protoc_cmd
+    print 'Jack1ProtoC'
     code = subprocess.call(protoc_cmd, shell=True)
     if code != 0:
         raise SCons.Errors.StopError(
