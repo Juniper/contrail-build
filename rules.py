@@ -439,6 +439,7 @@ def ProtocDescBuilder(target, source, env):
         str(target[0]) + ' --include_imports ' + \
         ' --proto_path=controller/src/' + \
         ' --proto_path=/usr/include/ ' + \
+        ' --proto_path=src/contrail-analytics/contrail-collector/ ' + \
         str(source[0])
     print protoc_cmd
     code = subprocess.call(protoc_cmd, shell=True)
@@ -465,8 +466,10 @@ def ProtocCppBuilder(target, source, env):
             'protoc Compiler not detected on system')
     protoc = env.WhereIs('protoc')
     protoc_cmd = protoc + ' --proto_path=/usr/include/ ' + \
+        ' --proto_path=src/contrail-analytics/contrail-collector/ ' + \
         '--proto_path=controller/src/ --proto_path=' + \
-        spath + ' --cpp_out=' + str(env.Dir(env['TOP'])) + ' ' + \
+        spath + ' --cpp_out=' + str(env.Dir(env['TOP'])) + \
+        env['PROTOC_MAP_TGT_DIR'] + ' ' + \
         str(source[0])
     print protoc_cmd
     code = subprocess.call(protoc_cmd, shell=True)
@@ -478,7 +481,11 @@ def ProtocSconsEnvCppFunc(env):
     cppbuild = Builder(action = ProtocCppBuilder)
     env.Append(BUILDERS = {'ProtocCpp' : cppbuild})
 
-def ProtocGenCppFunc(env, file):
+def ProtocGenCppMapTgtDirFunc(env, file, target_root = ''):
+    if target_root == '':
+        env['PROTOC_MAP_TGT_DIR'] = ''
+    else:
+        env['PROTOC_MAP_TGT_DIR'] = '/' + target_root
     ProtocSconsEnvCppFunc(env)
     suffixes = ['.pb.h',
                 '.pb.cc'
@@ -486,6 +493,9 @@ def ProtocGenCppFunc(env, file):
     basename = Basename(file)
     targets = map(lambda suffix: basename + suffix, suffixes)
     return env.ProtocCpp(targets, file)
+
+def ProtocGenCppFunc(env, file):
+    return (ProtocGenCppMapTgtDirFunc(env, file, ''))
 
 # When doing parallel build, scons will sometimes try to invoke the
 # sandesh compiler while sandesh itself is still being compiled and
@@ -1211,6 +1221,7 @@ def SetupBuildEnvironment(conf):
     env.AddMethod(GetBuildVersion, "GetBuildVersion")
     env.AddMethod(ProtocGenDescFunc, "ProtocGenDesc")
     env.AddMethod(ProtocGenCppFunc, "ProtocGenCpp")
+    env.AddMethod(ProtocGenCppMapTgtDirFunc, "ProtocGenCppMapTgtDir")
     env.AddMethod(SandeshGenOnlyCppFunc, "SandeshGenOnlyCpp")
     env.AddMethod(SandeshGenCppFunc, "SandeshGenCpp")
     env.AddMethod(SandeshGenCFunc, "SandeshGenC")
