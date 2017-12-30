@@ -1250,3 +1250,61 @@ def SetupBuildEnvironment(conf):
     env.AddMethod(CppEnableExceptions, "CppEnableExceptions")
     return env
 # SetupBuildEnvironment
+
+def debug_targets_setup(env, dump_targets_filename):
+    import atexit
+    from SCons.Script import GetBuildFailures, BUILD_TARGETS, COMMAND_LINE_TARGETS, DEFAULT_TARGETS
+
+    build_targets_as_nodes = []
+
+    def is_child(root, node):
+        """naive function to determine if 'node' is a descendant of 'root'
+        in the build dependency tree"""
+        visited = set()
+        tosearch = [root]
+        while tosearch:
+            current = tosearch.pop()
+            if type(current) == str:
+                print 'str node', current
+            if str(current) == str(node):
+                return True
+            if current not in visited:
+                visited.add(current)
+                tosearch = current.children() + tosearch
+        return False
+
+    def dump_target_info():
+        """this function will write a json dict containing information about
+        the targets involved in this scons invocation (default targets, explicit commandline
+        targets, failed targets)"""
+        from SCons.Node import arg2nodes_lookups
+        failed_targets = []
+        failed_root_targets = set()
+        for bf in GetBuildFailures():
+            print "%s failed: %s" % (bf.node, bf.errstr)
+            failed_targets.append(str(bf.node))
+            # find root targets of the failed nodes
+            for root_node in build_targets_as_nodes:
+                if is_child(root_node, bf.node):
+                    print str(bf.node), 'caused failure of the', str(root_node), 'root target'
+                    failed_root_targets.add(root_node)
+        if len(failed_root_targets) == 0:
+            print 'Cannot determine the root targets affected by the failure of', str(bf.node)
+        targets_dump = {
+            'COMMAND_LINE_TARGETS': map(str, COMMAND_LINE_TARGETS),
+            'DEFAULT_TARGETS':map(str, DEFAULT_TARGETS),
+            'FAILED_TARGETS': failed_targets,
+            'FAILED_ROOT_TARGETS': list(map(str, failed_root_targets)),
+            'BUILD_TARGETS': list(map(str, BUILD_TARGETS))
+        }
+        with open(dump_targets_filename, 'w') as dump_targets_file:
+            dump_targets_file.write(json.dumps(targets_dump))
+
+    # convert build targets to Scons Node objects (they can be strings)
+    for bt in BUILD_TARGETS:
+        nodes = env.arg2nodes(bt, env.fs.Entry)
+        assert(len(nodes) < 2)
+        root_node = nodes[0]
+        build_targets_as_nodes.append(root_node)
+
+    atexit.register(dump_target_info)

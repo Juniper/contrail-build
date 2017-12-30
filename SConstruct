@@ -32,3 +32,8 @@ if os.path.exists("openstack/ceilometer_plugin/SConscript"):
 if os.path.exists("contrail-f5/SConscript"):
     SConscript('contrail-f5/SConscript',
                variant_dir='build/noarch/contrail-f5')
+
+AddOption('--dump-targets', dest='dump_targets', action='store', type='string')
+dump_targets = GetOption('dump_targets')
+if dump_targets:
+    rules.debug_targets_setup(env, dump_targets)
