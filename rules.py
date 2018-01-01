@@ -232,6 +232,12 @@ def PyTestSuite(env, target, source, venv=None):
         env.Alias(target, cmd)
     return target
 
+def PythonRunTests(env, target, source, top_dir, coverage=False):
+    if env['ENV'].has_key('BUILD_ONLY'):
+        return ''
+    test_cmd = env.Command(target, source, 'bash -c "set -o pipefail && cd ' + top_dir + ' && python setup.py run_tests ' + ('--coverage ' if coverage else '') + '2>&1 | tee %s"' % target[0])
+    return test_cmd
+
 def UnitTest(env, name, sources, **kwargs):
     test_env = env.Clone()
 
@@ -1203,8 +1209,9 @@ def SetupBuildEnvironment(conf):
             env.Append(CCFLAGS = '-g')
             env.Append(LINKFLAGS = '-g')
 
-    env.Append(BUILDERS = {'PyTestSuite': PyTestSuite })
-    env.Append(BUILDERS = {'TestSuite': TestSuite })
+    env.Append(BUILDERS = {'PyTestSuite': PyTestSuite})
+    env.Append(BUILDERS = {'PythonRunTests': PythonRunTests})
+    env.Append(BUILDERS = {'TestSuite': TestSuite})
     env.Append(BUILDERS = {'UnitTest': UnitTest})
     env.Append(BUILDERS = {'GenerateBuildInfoCode': GenerateBuildInfoCode})
     env.Append(BUILDERS = {'GenerateBuildInfoPyCode': GenerateBuildInfoPyCode})
