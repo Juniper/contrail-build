@@ -634,9 +634,19 @@ def SandeshCppBuilder(target, source, env):
     if not env.Detect('xxd'):
         raise SCons.Errors.StopError(SandeshCodeGeneratorError,
                                      'xxd not detected on system')
-    with open(cname, 'a') as cfile:
+    with open(cname, 'w') as cfile:
         cfile.write('namespace {\n')
-        subprocess.call(['xxd', '-i', hname], stdout=cfile, cwd=opath)
+
+    # If one passes file to `stdout` kwarg to subprocess.call on Windows, it gets fileno from this
+    # file, then handle for that fileno and forwards stdout to that handle, which means it bypasses
+    # Python's internal buffer and sometimes writes before our previous call to `write` method.
+    # Besides, probably due to some bug in subprocess on Windows, it opens handles to other files in
+    # that folder (checked with handle64 from Windows Sysinternals) so it sometimes breaks
+    # multithreaded builds when it opens a handle to file used by another thread. For that reason we
+    # can't use `stdout` kwarg here. If there's a need to get rid of shell redirection, one should
+    # get rid of calling xxd at all - this feature should be done in native Python code.
+    subprocess.call('xxd -i ' + hname + ' >> ' + os.path.basename(cname), shell=True, cwd=opath)
+    with open(cname, 'a') as cfile:
         cfile.write('}\n')
         with open(tname, 'r') as tfile:
             for line in tfile:
@@ -1155,6 +1165,8 @@ def SetupBuildEnvironment(conf):
         env.Append(CCFLAGS = '/EHsc')
         # Disable min/max macros to avoid conflicts
         env.Append(CCFLAGS = '/DNOMINMAX')
+        # Disable GDI to avoid conflicts with macros
+        env.Append(CCFLAGS = '/DNOGDI')
         # Disable MSVC paranoid warnings
         env.Append(CCFLAGS = ['/D_SCL_SECURE_NO_WARNINGS', '/D_CRT_SECURE_NO_WARNINGS'])
         # Stop Windows.h from including a lot of useless header files
