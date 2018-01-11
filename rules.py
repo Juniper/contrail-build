@@ -1175,6 +1175,7 @@ def SetupBuildEnvironment(conf):
     opt_level = env['OPT']
     if opt_level == 'production':
         if sys.platform == 'win32':
+            env['VS_BUILDMODE'] = 'Release'
             # Enable full compiler optimization
             env.Append(CCFLAGS = '/Ox')
             # Enable multithreaded release dll build
@@ -1186,6 +1187,7 @@ def SetupBuildEnvironment(conf):
         env['TOP'] = '#build/production'
     elif opt_level == 'debug':
         if sys.platform == 'win32':
+            env['VS_BUILDMODE'] = 'Debug'
             # Enable runtime checks and disable optimization
             env.Append(CCFLAGS = '/RTC1')
             # Enable multithreaded debug dll build and define _DEBUG
