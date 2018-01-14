@@ -146,10 +146,17 @@ def TestSuite(env, target, source):
         for test in env.Flatten(source):
             # UnitTest() may have tagged tests with skip_run attribute
             if getattr( test.attributes, 'skip_run', False ): continue
-            log = test.abspath + '.log'
-            cmd = env.Command(log, test, RunUnitTest)
-            env.AlwaysBuild(cmd)
-            env.Alias(target, cmd)
+
+            cmd = env.Command(test.abspath + '.log', test, RunUnitTest)
+
+            # If BUILD_ONLY set, do not alias foo.log target, to avoid
+            # invoking the RunUnitTest() as a no-op (i.e., this avoids
+            # some log clutter)
+            if env['ENV'].has_key('BUILD_ONLY'):
+                env.Alias(target, test)
+            else:
+                env.AlwaysBuild(cmd)
+                env.Alias(target, cmd)
         return target
 
 def setup_venv(env, target, venv_name, path=None):
@@ -245,15 +252,31 @@ def UnitTest(env, name, sources, **kwargs):
         for t in test_exe_list: t.attributes.skip_run = True
     return test_exe_list
 
+# Returns True if the build is being done by a CI job,
+# by Jenkins, or some other official or automated build
+def IsAutomatedBuild():
+    return 'ZUUL_CHANGE' in os.environ or 'BUILD_BRANCH' in os.environ
+
+# Return True if we want quiet/short CLI echo for gcc/g++/gld/etc
+# Default is same as IsAutomatedBuild(), but we return
+# false if BUILD_QUIET is set to something that looks like "true"
+def WantQuietOutput():
+    v = os.environ.get('BUILD_QUIET', IsAutomatedBuild())
+    return v in [ True, "True", "TRUE", "true", "yes", "1" ]
+
 # we are not interested in source files for the dependency, but rather
 # to force rebuilds. Pass an empty source to the env.Command, to break
 # circular dependencies.
 # XXX: This should be rewritten using SCons Value nodes (for generating
 # build info itself) and Builder for managing targets.
 def GenerateBuildInfoCode(env, target, source, path):
-    env.AlwaysBuild(
-        env.Command(target=target, source=[], action=BuildInfoAction)
-    )
+    o = env.Command(target=target, source=[], action=BuildInfoAction)
+
+    # if we are running under CI or jenkins-driven CB/OB build,
+    # we do NOT want to use AlwaysBuild, as it triggers unnecessary
+    # rebuilds.
+    if not IsAutomatedBuild(): env.AlwaysBuild(o)
+
     return
 
 # If contrail-controller (i.e., #controller/) is present, determine
@@ -1111,6 +1134,18 @@ def SetupBuildEnvironment(conf):
     env['INSTALL_SNMP_CONF'] += '/etc/snmp'
     env['INSTALL_EXAMPLE'] += '/usr/share/contrail'
     env['INSTALL_DOC'] += '/usr/share/doc'
+
+    # Sometimes we don't need or want full CLI's
+    if WantQuietOutput():
+        env['ARCOMSTR'] = 'AR $TARGET'
+        env['CCCOMSTR'] = 'CC $TARGET'
+        env['CXXCOMSTR'] = 'C++ $TARGET'
+        env['INSTALLSTR'] = 'Install $SOURCE -> $TARGET '
+        env['LINKCOMSTR'] = 'LD $TARGET'
+        env['RANLIBCOMSTR'] = 'RANLIB $TARGET'
+        env['SHCCCOMSTR'] = 'CC $TARGET [shared]'
+        env['SHCXXCOMSTR'] = 'C++ $TARGET [shared]'
+        env['SHDLINKCOMSTR'] = 'LD $TARGET [shared]'
 
     distribution = env.GetPlatformInfo()[0]
 
