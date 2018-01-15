@@ -159,6 +159,81 @@ def TestSuite(env, target, source):
                 env.Alias(target, cmd)
         return target
 
+def GetVncAPIPkg(env):
+    h,v = env.GetBuildVersion()
+    return '/api-lib/dist/vnc_api-%s.tar.gz' % v
+
+sdist_default_depends = [
+    '/config/common/dist/cfgm_common-0.1dev.tar.gz',
+    '/tools/sandesh/library/python/dist/sandesh-0.1dev.tar.gz',
+    '/sandesh/common/dist/sandesh-common-0.1dev.tar.gz',
+]
+
+# SetupPyTestSuiteWithDeps
+#
+# Function to provide consistent 'python setup.py run_tests' interface
+#
+# The var *args is expected to contain a list of dependencies. If
+# *args is empty, then above sdist_default_depends + the vnc_api tgz
+# is used.
+#
+# This method is mostly to be used by SetupPyTestSuite(), but there
+# is one special-case instance (controller/src/api-lib) that needs
+# to use this builder directly, so that it can provide explicit list
+# of dependencies.
+#
+def SetupPyTestSuiteWithDeps(env, sdist_target, *args, **kwargs):
+    use_tox = kwargs['use_tox'] if 'use_tox' in kwargs else False
+
+    buildspace_link = os.environ.get('CONTRAIL_REPO')
+    if buildspace_link:
+        # in CI environment shebang limit exceeds for python
+        # in easy_install/pip, reach to it via symlink
+        top_dir = env.Dir(buildspace_link + '/' + env.Dir('.').path)
+    else:
+        top_dir = env.Dir('.')
+
+    cmd_base = 'bash -c "set -o pipefail && cd ' + env.Dir(top_dir).path + ' && %s 2>&1 | tee %s.log"'
+
+    # if BUILD_ONLY, we create a "pass through" dependency... the test target will end up depending
+    # (only) on the original sdist target
+    if 'BUILD_ONLY' in env['ENV']:
+        test_cmd = cov_cmd = sdist_target
+    else:
+        cmd_str = 'tox' if use_tox else 'python setup.py run_tests'
+        test_cmd = env.Command('test.log', sdist_target, cmd_base % (cmd_str, "test"))
+        cmd_str += ' -e cover' if use_tox else ' --coverage'
+        cov_cmd = env.Command('coveragetest.log', sdist_target, cmd_base % (cmd_str, 'coveragetest'))
+
+    # If *args is not empty, it contains our dependencies. We use
+    # Flatten() to make sure we end up with a list of "just strings".
+    # If caller wants zero dependencies, then pass an empty list []
+    # (note: not tested)
+    if len(args): sdist_depends = env.Flatten(args)
+    else: 	  sdist_depends = sdist_default_depends + [ env.GetVncAPIPkg() ]
+
+    full_depends = [ env['TOP'] + x for x in sdist_depends ]
+    env.Depends(test_cmd, full_depends)
+    env.Depends(cov_cmd, full_depends)
+
+    d = env.Dir('.').srcnode().path
+    env.Alias( d + ':test', test_cmd )
+    env.Alias( d + ':coverage', cov_cmd )
+    # env.Depends('test', test_cmd) # XXX This may need to be restored
+    env.Depends('coverage', cov_cmd)
+
+# SetupPyTestSuite()
+#
+# General entry point for setting up 'python setup.py run_tests'. If
+# using this method, the default dependencies are assumed. Any
+# additional arguments in *args are *additional* dependencies
+#
+def SetupPyTestSuite(env, sdist_target, *args, **kwargs):
+    sdist_depends = sdist_default_depends + [ env.GetVncAPIPkg() ]
+    if len(args): sdist_depends += args
+
+    env.SetupPyTestSuiteWithDeps(sdist_target, sdist_depends, **kwargs)
+
 def setup_venv(env, target, venv_name, path=None):
     p = path
     if not p:
@@ -1140,7 +1215,7 @@ def SetupBuildEnvironment(conf):
         env['ARCOMSTR'] = 'AR $TARGET'
         env['CCCOMSTR'] = 'CC $TARGET'
         env['CXXCOMSTR'] = 'C++ $TARGET'
-        env['INSTALLSTR'] = 'Install $SOURCE -> $TARGET '
+        env['INSTALLSTR'] = 'Install $SOURCE -> $TARGET'
         env['LINKCOMSTR'] = 'LD $TARGET'
         env['RANLIBCOMSTR'] = 'RANLIB $TARGET'
         env['SHCCCOMSTR'] = 'CC $TARGET [shared]'
@@ -1263,6 +1338,11 @@ def SetupBuildEnvironment(conf):
     env.Append(BUILDERS = {'venv_add_pip_pkg': venv_add_pip_pkg })
     env.Append(BUILDERS = {'venv_add_build_pkg': venv_add_build_pkg })
     env.Append(BUILDERS = {'build_maven': build_maven })
+
+    # A few methods to enable/support UTs and BUILD_ONLY
+    env.AddMethod(GetVncAPIPkg, 'GetVncAPIPkg')
+    env.AddMethod(SetupPyTestSuite, 'SetupPyTestSuite' )
+    env.AddMethod(SetupPyTestSuiteWithDeps, 'SetupPyTestSuiteWithDeps' )
 
     env.AddMethod(ExtractCppFunc, "ExtractCpp")
     env.AddMethod(ExtractCFunc, "ExtractC")
