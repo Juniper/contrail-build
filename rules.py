@@ -998,6 +998,8 @@ def UseSystemBoost(env):
         'Fedora': '20',
         'SUSE Linux Enterprise Desktop ': '12',
         'SUSE Linux Enterprise Server ': '12',
+        'redhat': '7.0',
+        'Red Hat Enterprise Linux Server': '7.0',
     }
     v_required = exclude_dist.get(distname)
     if v_required and LooseVersion(version) >= LooseVersion(v_required):
@@ -1017,6 +1019,8 @@ def UseSystemTBB(env):
         'CentOS Linux': '7.0',
         'fedora': '20',
         'Fedora': '20',
+        'redhat': '7.0',
+        'Red Hat Enterprise Linux Server': '7.0',
     }
     (distname, version, _) = env.GetPlatformInfo()
     v_required = systemTBBdict.get(distname)
