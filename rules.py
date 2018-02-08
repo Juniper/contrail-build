@@ -244,10 +244,10 @@ def setup_venv(env, target, venv_name, path=None):
     tdir = '/tmp/cache/%s/systemless_test' % getpass.getuser()
     shell_cmd = ' && '.join ([
         'cd %s' % p,
-        'mkdir %s' % tdir,
+        'mkdir -p %s' % tdir,
         '[ -f %s/ez_setup-0.9.tar.gz ] || curl -o %s/ez_setup-0.9.tar.gz https://pypi.python.org/packages/source/e/ez_setup/ez_setup-0.9.tar.gz' % (tdir,tdir),
         '[ -d ez_setup-0.9 ] || tar xzf %s/ez_setup-0.9.tar.gz' % tdir,
-        '[ -f %s/redis-2.6.13.tar.gz ] || (cd %s && wget https://redis.googlecode.com/files/redis-2.6.13.tar.gz)' % (tdir,tdir),
+        '[ -f %s/redis-2.6.13.tar.gz ] || (cd %s && wget https://storage.googleapis.com/google-code-archive-downloads/v2/code.google.com/redis/redis-2.6.13.tar.gz)' % (tdir,tdir),
         '[ -d ../redis-2.6.13 ] || (cd .. && tar xzf %s/redis-2.6.13.tar.gz)' % tdir,
         '[ -f testroot/bin/redis-server ] || ( cd ../redis-2.6.13 && make PREFIX=%s/testroot install)' % p,
         '[ -f %s/Python-2.7.3.tar.bz2 ] || (cd %s && wget --no-check-certificate http://www.python.org/ftp/python/2.7.3/Python-2.7.3.tar.bz2)' % (tdir,tdir),
@@ -279,6 +279,9 @@ def venv_add_pip_pkg(env, v, pkg_list):
             targets.append(name)
 
     tdir = '/tmp/cache/%s/systemless_test' % getpass.getuser()
+    if not os.path.exists(tdir):
+        os.makedirs(tdir)
+
     cmd = env.Command(targets, None, '/bin/bash -c "source %s/bin/activate; pip install --download-cache=%s %s"' %
                       (venv._path, tdir, ' '.join(pkg_list)))
     env.AlwaysBuild(cmd)
