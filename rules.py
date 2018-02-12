@@ -336,8 +336,7 @@ def IsAutomatedBuild():
 # Default is same as IsAutomatedBuild(), but we return
 # false if BUILD_QUIET is set to something that looks like "true"
 def WantQuietOutput():
-    v = os.environ.get('BUILD_QUIET', IsAutomatedBuild())
-    return v in [ True, "True", "TRUE", "true", "yes", "1" ]
+    return False
 
 # we are not interested in source files for the dependency, but rather
 # to force rebuilds. Pass an empty source to the env.Command, to break
