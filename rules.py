@@ -8,6 +8,7 @@ from SCons.Builder import Builder
 from SCons.Action import Action
 from SCons.Errors import convert_to_BuildError
 from SCons.Script import AddOption, GetOption, SetOption
+from distutils.version import LooseVersion, StrictVersion
 import json
 import SCons.Util
 import subprocess
@@ -273,12 +274,16 @@ def venv_add_pip_pkg(env, v, pkg_list):
         if name[0] != '/':
             targets.append(name)
 
-    tdir = '/tmp/cache/%s/systemless_test' % getpass.getuser()
-    if not os.path.exists(tdir):
-        os.makedirs(tdir)
-
-    cmd = env.Command(targets, None, '/bin/bash -c "source %s/bin/activate; pip install --download-cache=%s %s"' %
-                      (venv._path, tdir, ' '.join(pkg_list)))
+    pip_version = subprocess.check_output(
+        "pip --version | awk '{print $2}'", shell=True).rstrip()
+    if pip_version < LooseVersion("6.0"):
+        tdir = '/tmp/cache/%s/systemless_test' % getpass.getuser()
+        download_cache = "--download-cache=%s" % (tdir)
+    else:
+        download_cache = ""
+    cmd = env.Command(targets, None,
+                      '/bin/bash -c "source %s/bin/activate; pip install %s %s"'
+                      % (venv._path, download_cache, ' '.join(pkg_list)))
     env.AlwaysBuild(cmd)
     env.Depends(cmd, venv)
     return cmd
