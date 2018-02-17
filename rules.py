@@ -1135,6 +1135,7 @@ def SetupBuildEnvironment(conf):
     AddOption('--root', dest = 'install_root', action='store')
     AddOption('--prefix', dest = 'install_prefix', action='store')
     AddOption('--pytest', dest = 'pytest', action='store')
+    AddOption('--without-dpdk', dest = 'build_dpdk', action='store_true')
 
     env = CheckBuildConfiguration(conf)
 
