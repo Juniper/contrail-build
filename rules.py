@@ -275,13 +275,14 @@ def venv_add_pip_pkg(env, v, pkg_list):
             targets.append(name)
 
     pip = "/bin/bash -c \"source %s/bin/activate 2>/dev/null; pip" % venv._path
-    pip_version = subprocess.check_output(
-        "%s --version | awk '{print \$2}'\"" % pip, shell=True).rstrip()
-    if pip_version < LooseVersion("6.0"):
-        tdir = '/tmp/cache/%s/systemless_test' % getpass.getuser()
-        download_cache = "--download-cache=%s" % (tdir)
-    else:
-        download_cache = ""
+    download_cache = ""
+    if sys.platform != 'win32':
+        pip_version = subprocess.check_output(
+            "%s --version | awk '{print \$2}'\"" % pip, shell=True).rstrip()
+        if pip_version < LooseVersion("6.0"):
+            tdir = '/tmp/cache/%s/systemless_test' % getpass.getuser()
+            download_cache = "--download-cache=%s" % (tdir)
+
     cmd = env.Command(targets, None, '%s install %s %s"' %
                                      (pip, download_cache, ' '.join(pkg_list)))
     env.AlwaysBuild(cmd)
