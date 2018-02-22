@@ -75,6 +75,10 @@ def RunUnitTest(env, target, source, timeout = 300):
     if env['ENV'].has_key('CONTRAIL_UT_TEST_TIMEOUT'):
         timeout = int(env['ENV']['CONTRAIL_UT_TEST_TIMEOUT'])
 
+    # Enable jUnit XML report generation for GoogleTest framework
+    junit_xml_path = source[0].abspath + ".xml"
+    env['ENV']['GTEST_OUTPUT'] = 'xml:' + junit_xml_path
+
     test = str(source[0].abspath)
     logfile = open(target[0].abspath, 'w')
     #    env['_venv'] = {target: venv}
