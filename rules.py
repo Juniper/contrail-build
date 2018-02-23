@@ -17,6 +17,7 @@ import time
 import commands
 import platform
 import getpass
+import warnings
 
 def GetPlatformInfo(env):
     '''
@@ -160,14 +161,11 @@ def TestSuite(env, target, source):
                 env.Alias(target, cmd)
         return target
 
-def GetVncAPIPkg(env):
-    h,v = env.GetBuildVersion()
-    return '/api-lib/dist/vnc_api-%s.tar.gz' % v
-
 sdist_default_depends = [
-    '/config/common/dist/cfgm_common-0.1dev.tar.gz',
-    '/tools/sandesh/library/python/dist/sandesh-0.1dev.tar.gz',
-    '/sandesh/common/dist/sandesh-common-0.1dev.tar.gz',
+    'controller/api-lib:vnc_api',
+    'controller/config:cfgm_common',
+    'controller/sandesh:common',
+    'sandesh/library/python:pysandesh',
 ]
 
 # SetupPyTestSuiteWithDeps
@@ -206,16 +204,24 @@ def SetupPyTestSuiteWithDeps(env, sdist_target, *args, **kwargs):
         cmd_str += ' -e cover' if use_tox else ' --coverage'
         cov_cmd = env.Command('coveragetest.log', sdist_target, cmd_base % (cmd_str, 'coveragetest'))
 
-    # If *args is not empty, it contains our dependencies. We use
-    # Flatten() to make sure we end up with a list of "just strings".
-    # If caller wants zero dependencies, then pass an empty list []
-    # (note: not tested)
-    if len(args): sdist_depends = env.Flatten(args)
-    else: 	  sdist_depends = sdist_default_depends + [ env.GetVncAPIPkg() ]
+    # If *args is not empty, move all arguments to kwargs['sdist_depends']
+    # and issue a warning. Also make sure we are not using old and new method
+    # of passing dependencies.
+    if len(args) and kwargs['sdist_depends']:
+        print("Do not both pass dependencies as *args"
+              "and use sdist_depends at the same time.")
+        Exit(1)
 
-    full_depends = [ env['TOP'] + x for x in sdist_depends ]
-    env.Depends(test_cmd, full_depends)
-    env.Depends(cov_cmd, full_depends)
+    if len(args):
+        warnings.warning("Don't pass dependencies as arguments pointing"
+                         "to tarballs, instead pass scons aliases"
+                         "as sdist_depends.")
+        full_depends = [env['TOP'] + x for x in env.Flatten(args)]
+        env.Depends(test_cmd, full_depends)
+        env.Depends(cov_cmd, full_depends)
+    else:
+        env.Depends(test_cmd, kwargs['sdist_depends'])
+        env.Depends(cov_cmd, kwargs['sdist_depends'])
 
     d = env.Dir('.').srcnode().path
     env.Alias( d + ':test', test_cmd )
@@ -230,10 +236,11 @@ def SetupPyTestSuiteWithDeps(env, sdist_target, *args, **kwargs):
 # additional arguments in *args are *additional* dependencies
 #
 def SetupPyTestSuite(env, sdist_target, *args, **kwargs):
-    sdist_depends = sdist_default_depends + [ env.GetVncAPIPkg() ]
+    sdist_depends = sdist_default_depends
     if len(args): sdist_depends += args
 
-    env.SetupPyTestSuiteWithDeps(sdist_target, sdist_depends, **kwargs)
+    env.SetupPyTestSuiteWithDeps(sdist_target,
+                                 sdist_depends=sdist_depends, **kwargs)
 
 def setup_venv(env, target, venv_name, path=None):
     p = path
