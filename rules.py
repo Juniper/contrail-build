@@ -223,6 +223,8 @@ def SetupPyTestSuiteWithDeps(env, sdist_target, *args, **kwargs):
     # env.Depends('test', test_cmd) # XXX This may need to be restored
     env.Depends('coverage', cov_cmd)
 
+    return test_cmd
+
 # SetupPyTestSuite()
 #
 # General entry point for setting up 'python setup.py run_tests'. If
@@ -233,7 +235,7 @@ def SetupPyTestSuite(env, sdist_target, *args, **kwargs):
     sdist_depends = sdist_default_depends + [ env.GetVncAPIPkg() ]
     if len(args): sdist_depends += args
 
-    env.SetupPyTestSuiteWithDeps(sdist_target, sdist_depends, **kwargs)
+    return env.SetupPyTestSuiteWithDeps(sdist_target, sdist_depends, **kwargs)
 
 def setup_venv(env, target, venv_name, path=None):
     p = path
