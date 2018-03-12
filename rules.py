@@ -18,6 +18,16 @@ import commands
 import platform
 import getpass
 
+
+class LoggingSpawner(object):
+    def __init__(self, env):
+        self.env = env
+        self.log = open("scons.log", "w")
+
+    def buffered_spawn(self, sh, escape, cmd, args, env):
+        return self.env['PSPAWN'](sh, escape, cmd, args, env, self.log, self.log)
+
+
 def GetPlatformInfo(env):
     '''
     Returns same 3-tuple as platform.dist()/platform.linux_distribution() (caches tuple)
@@ -1231,6 +1241,9 @@ def SetupBuildEnvironment(conf):
         env['SHCCCOMSTR'] = 'CC $TARGET [shared]'
         env['SHCXXCOMSTR'] = 'C++ $TARGET [shared]'
         env['SHDLINKCOMSTR'] = 'LD $TARGET [shared]'
+        logger = LoggingSpawner(env)
+        env['SPAWN'] = logging.buffered_spawn
+
 
     distribution = env.GetPlatformInfo()[0]
 
