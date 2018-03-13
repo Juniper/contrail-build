@@ -17,6 +17,7 @@ import time
 import commands
 import platform
 import getpass
+import warnings
 
 def GetPlatformInfo(env):
     '''
@@ -206,16 +207,40 @@ def SetupPyTestSuiteWithDeps(env, sdist_target, *args, **kwargs):
         cmd_str += ' -e cover' if use_tox else ' --coverage'
         cov_cmd = env.Command('coveragetest.log', sdist_target, cmd_base % (cmd_str, 'coveragetest'))
 
-    # If *args is not empty, it contains our dependencies. We use
-    # Flatten() to make sure we end up with a list of "just strings".
-    # If caller wants zero dependencies, then pass an empty list []
-    # (note: not tested)
-    if len(args): sdist_depends = env.Flatten(args)
-    else: 	  sdist_depends = sdist_default_depends + [ env.GetVncAPIPkg() ]
+    # If *args is not empty, move all arguments to kwargs['sdist_depends']
+    # and issue a warning. Also make sure we are not using old and new method
+    # of passing dependencies.
+    if len(args) and 'sdist_depends' in kwargs:
+        print("Do not both pass dependencies as *args"
+              "and use sdist_depends at the same time.")
+        Exit(1)
 
-    full_depends = [ env['TOP'] + x for x in sdist_depends ]
-    env.Depends(test_cmd, full_depends)
-    env.Depends(cov_cmd, full_depends)
+    # during transition we have to support both types of targets
+    # as dependencies. This function allows us to mix both SCons targets
+    # and file paths.
+    def _rewrite_file_dependencies(deps):
+        """Update direct file dependencies to prepend build path"""
+        # file dependencies need absulute paths
+        file_depends = [env['TOP'] + x for x in deps if x.startswith('/')]
+        # explicitly define each target as Alias, in case it hasn't yet been
+        # defined in SConscript.
+        scons_depends = [env.Alias(x) for x in deps if not x.startswith('/')]
+        return file_depends + scons_depends
+
+    if len(args):
+        warnings.warn("Don't pass dependencies as arguments pointing"
+                      " to tarballs, instead pass scons aliases"
+                      " as sdist_depends.")
+        full_depends = _rewrite_file_dependencies(env.Flatten(args))
+    else:
+        full_depends = _rewrite_file_dependencies(kwargs['sdist_depends'])
+
+    # When BUILD_ONLY is defined, test_cmd and cov_cmd are replaced with
+    # sdist_target - that can lead to circular dependencies when tests
+    # depend on other components.
+    if 'BUILD_ONLY' not in env['ENV']:
+        env.Depends(test_cmd, full_depends)
+        env.Depends(cov_cmd, full_depends)
 
     d = env.Dir('.').srcnode().path
     env.Alias( d + ':test', test_cmd )
@@ -233,7 +258,8 @@ def SetupPyTestSuite(env, sdist_target, *args, **kwargs):
     sdist_depends = sdist_default_depends + [ env.GetVncAPIPkg() ]
     if len(args): sdist_depends += args
 
-    env.SetupPyTestSuiteWithDeps(sdist_target, sdist_depends, **kwargs)
+    env.SetupPyTestSuiteWithDeps(sdist_target,
+                                 sdist_depends=sdist_depends, **kwargs)
 
 def setup_venv(env, target, venv_name, path=None):
     p = path
