@@ -940,7 +940,7 @@ def ThriftGenPyFunc(env, path, target=''):
 
 def IFMapBuilderCmd(source, target, env, for_signature):
     output = Basename(source[0].abspath)
-    return '%s -f -g ifmap-backend -o %s %s' % (env.File('#tools/generateds/generateDS.py').abspath, output, source[0])
+    return '%s -f -g ifmap-backend -o %s %s' % (env.File('#src/contrail-api-client/generateds/generateDS.py').abspath, output, source[0])
 
 def IFMapTargetGen(target, source, env):
     suffixes = ['_types.h', '_types.cc', '_parser.cc',
@@ -957,7 +957,7 @@ def CreateIFMapBuilder(env):
 
 def DeviceAPIBuilderCmd(source, target, env, for_signature):
     output = Basename(source[0].abspath)
-    return './tools/generateds/generateDS.py -f -g device-api -o %s %s' % (output, source[0])
+    return './src/contrail-api-client/generateds/generateDS.py -f -g device-api -o %s %s' % (output, source[0])
 
 def DeviceAPITargetGen(target, source, env):
     suffixes = []
@@ -972,7 +972,7 @@ def CreateDeviceAPIBuilder(env):
 
 def TypeBuilderCmd(source, target, env, for_signature):
     output = Basename(source[0].abspath)
-    return '%s -f -g type -o %s %s' % (env.File('#tools/generateds/generateDS.py').abspath, output, source[0])
+    return '%s -f -g type -o %s %s' % (env.File('#src/contrail-api-client/generateds/generateDS.py').abspath, output, source[0])
 
 def TypeTargetGen(target, source, env):
     suffixes = ['_types.h', '_types.cc', '_parser.cc']
