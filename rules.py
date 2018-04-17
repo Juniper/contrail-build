@@ -14,7 +14,6 @@ import SCons.Util
 import subprocess
 import sys
 import time
-import commands
 import platform
 import getpass
 import warnings
@@ -128,19 +127,19 @@ def RunUnitTest(env, target, source, timeout = 300):
     if code is None:
         proc.kill()
         logfile.write('[  TIMEOUT  ] ')
-        print test + '\033[91m' + " TIMEOUT" + '\033[0m'
+        print(test + '\033[91m' + " TIMEOUT" + '\033[0m')
         raise convert_to_BuildError(code)
         return
 
     if code == 0:
-        print test + '\033[94m' + " PASS" + '\033[0m'
+        print(test + '\033[94m' + " PASS" + '\033[0m')
     else:
         logfile.write('[  FAILED  ] ')
         if code < 0:
             logfile.write('Terminated by signal: ' + str(-code) + '\n')
         else:
             logfile.write('Program returned ' + str(code) + '\n')
-        print test + '\033[91m' + " FAIL" + '\033[0m'
+        print(test + '\033[91m' + " FAIL" + '\033[0m')
         raise convert_to_BuildError(code)
 
 def TestSuite(env, target, source):
@@ -154,7 +153,7 @@ def TestSuite(env, target, source):
             # If BUILD_ONLY set, do not alias foo.log target, to avoid
             # invoking the RunUnitTest() as a no-op (i.e., this avoids
             # some log clutter)
-            if env['ENV'].has_key('BUILD_ONLY'):
+            if 'BUILD_ONLY' in env['ENV']:
                 env.Alias(target, test)
             else:
                 env.AlwaysBuild(cmd)
@@ -328,7 +327,7 @@ def venv_add_build_pkg(env, v, pkg):
     return cmd
 
 def PyTestSuite(env, target, source, venv=None):
-    if env['ENV'].has_key('BUILD_ONLY'):
+    if 'BUILD_ONLY' in env['ENV']:
         return target
     for test in source:
         log = test + '.log'
@@ -425,7 +424,7 @@ def GetBuildInfoData(env, target, source):
 
     # Fetch Time in UTC
     import datetime
-    build_time = unicode(datetime.datetime.utcnow())
+    build_time = str(datetime.datetime.utcnow())
 
     build_git_info, build_version = GetBuildVersion(env)
 
@@ -465,14 +464,11 @@ extern const std::string BuildInfo;
 const std::string BuildInfo = "%(json)s";
 """ % { 'json': jsdata.replace('"', "\\\"") }
 
-    h_file = file(os.path.join(build_dir, 'buildinfo.h'), 'w')
-    h_file.write(h_code)
-    h_file.close()
+    with open(os.path.join(build_dir, 'buildinfo.h'), 'w') as h_file:
+        h_file.write(h_code)
 
-    cc_file = file(os.path.join(build_dir, 'buildinfo.cc'), 'w')
-    cc_file.write(cc_code)
-    cc_file.close()
-    return
+    with open(os.path.join(build_dir, 'buildinfo.cc'), 'w') as cc_file:
+        cc_file.write(cc_code)
 #end BuildInfoAction
 
 def GenerateBuildInfoCCode(env, target, source, path):
@@ -487,10 +483,8 @@ def GenerateBuildInfoCCode(env, target, source, path):
 const char *ContrailBuildInfo = "%(json)s";
 """ % { 'json': jsdata.replace('"', "\\\"") }
 
-    c_file = file(os.path.join(build_dir, target[0]), 'w')
-    c_file.write(c_code)
-    c_file.close()
-    return
+    with open(os.path.join(build_dir, target[0]), 'w') as c_file:
+        c_file.write(c_code)
 #end GenerateBuildInfoCCode
 
 def GenerateBuildInfoPyCode(env, target, source, path):
@@ -569,7 +563,7 @@ def ProtocDescBuilder(target, source, env):
         ' --proto_path=/usr/include/ ' + \
         ' --proto_path=src/contrail-analytics/contrail-collector/ ' + \
         str(source[0])
-    print protoc_cmd
+    print(protoc_cmd)
     code = subprocess.call(protoc_cmd, shell=True)
     if code != 0:
         raise SCons.Errors.StopError(
@@ -599,7 +593,7 @@ def ProtocCppBuilder(target, source, env):
         spath + ' --cpp_out=' + str(env.Dir(env['TOP'])) + \
         env['PROTOC_MAP_TGT_DIR'] + ' ' + \
         str(source[0])
-    print protoc_cmd
+    print(protoc_cmd)
     code = subprocess.call(protoc_cmd, shell=True)
     if code != 0:
         raise SCons.Errors.StopError(
@@ -645,7 +639,7 @@ def wait_for_sandesh_install(env):
             except Exception as e:
                 rc = 0
         if (rc != 1):
-            print 'scons: warning: sandesh -version returned %d, retrying' % rc
+            print('scons: warning: sandesh -version returned %d, retrying' % rc)
             time.sleep(1)
 
 class SandeshWarning(SCons.Warnings.Warning):
@@ -705,7 +699,7 @@ def SandeshGenDocFunc(env, filepath, target=''):
         filename = path_split[1]
     else:
         filename = path_split[0]
-    targets = map(lambda suffix: target + 'gen-doc/' + filename + suffix, suffixes)
+    targets = [target + 'gen-doc/' + filename + suffix for suffix in suffixes]
     env.Depends(targets, '#build/bin/sandesh' + env['PROGSUFFIX'])
     return env.SandeshDoc(targets, filepath)
 
@@ -741,7 +735,7 @@ def SandeshGenOnlyCppFunc(env, file, extra_suffixes=[]):
         suffixes += extra_suffixes
 
     basename = Basename(file)
-    targets = map(lambda suffix: basename + suffix, suffixes)
+    targets = [basename + suffix for suffix in suffixes]
     env.Depends(targets, '#build/bin/sandesh' + env['PROGSUFFIX'])
     return env.SandeshOnlyCpp(targets, file)
 
@@ -798,7 +792,7 @@ def SandeshGenCppFunc(env, file, extra_suffixes=[]):
         suffixes += extra_suffixes
 
     basename = Basename(file)
-    targets = map(lambda suffix: basename + suffix, suffixes)
+    targets = [basename + suffix for suffix in suffixes]
     env.Depends(targets, '#build/bin/sandesh' + env['PROGSUFFIX'])
     return env.SandeshCpp(targets, file)
 
@@ -821,7 +815,7 @@ def SandeshGenCFunc(env, file):
     SandeshSconsEnvCFunc(env)
     suffixes = ['_types.h', '_types.c']
     basename = Basename(file)
-    targets = map(lambda suffix: 'gen-c/' + basename + suffix, suffixes)
+    targets = ['gen-c/' + basename + suffix for suffix in suffixes]
     env.Depends(targets, '#build/bin/sandesh' + env['PROGSUFFIX'])
     return env.SandeshC(targets, file)
 
@@ -859,10 +853,9 @@ def SandeshGenPyFunc(env, path, target='', gen_py=True):
     else:
         mod_dir = path_split[0] + '/'
     if gen_py:
-        targets = map(lambda module: target + 'gen_py/' + mod_dir + module,
-                      modules)
+        targets = [target + 'gen_py/' + mod_dir + module for module in modules]
     else:
-        targets = map(lambda module: target + mod_dir + module, modules)
+        targets = [target + mod_dir + module for module in modules]
 
     env.Depends(targets, '#build/bin/sandesh' + env['PROGSUFFIX'])
     return env.SandeshPy(targets, path)
@@ -881,7 +874,7 @@ def GoCniFunc(env, filepath, target=''):
         cmd += go_cmd + 'install'
         code = subprocess.call(cmd, shell=True, env=goenv)
     except Exception as e:
-        print str(e)
+        print(str(e))
     return env['TOP'] + '/container/cni/bin/' + filepath
 
 # ThriftGenCpp Methods
@@ -946,7 +939,7 @@ def IFMapTargetGen(target, source, env):
     suffixes = ['_types.h', '_types.cc', '_parser.cc',
                 '_server.cc', '_agent.cc']
     basename = Basename(source[0].abspath)
-    targets = map(lambda x: basename + x, suffixes)
+    targets = [basename + x for x in suffixes]
     return targets, source
 
 def CreateIFMapBuilder(env):
@@ -977,7 +970,7 @@ def TypeBuilderCmd(source, target, env, for_signature):
 def TypeTargetGen(target, source, env):
     suffixes = ['_types.h', '_types.cc', '_parser.cc']
     basename = Basename(source[0].abspath)
-    targets = map(lambda x: basename + x, suffixes)
+    targets = [basename + x for x in suffixes]
     return targets, source
 
 def CreateTypeBuilder(env):
@@ -993,9 +986,9 @@ def CheckBuildConfiguration(conf):
     opt_level = GetOption('opt')
     if ((opt_level == 'production' or opt_level == 'profile') and \
         (conf.env['CC'].endswith("gcc") or conf.env['CC'].endswith("g++"))):
-        if commands.getoutput(conf.env['CC'] + ' -dumpversion') == "4.7.0":
-            print "Unsupported/Buggy compiler gcc 4.7.0 for building " + \
-                  "optimized binaries"
+        if conf.env['CCVERSION'] == "4.7.0":
+            print("Unsupported/Buggy compiler gcc 4.7.0 for building " + \
+                  "optimized binaries")
             raise convert_to_BuildError(1)
     return conf.Finish()
 
@@ -1153,7 +1146,7 @@ def determine_job_value():
     (one,five,_) = os.getloadavg()
     avg_load = int(one + five / 2)
     avail = (ncore - avg_load) * 3 / 2
-    print "scons: available jobs = %d" % avail
+    print("scons: available jobs = %d" % avail)
     return avail
 
 
@@ -1185,7 +1178,7 @@ def SetupBuildEnvironment(conf):
         # assume 1 means -j not specified).
         nj = determine_job_value()
         if nj > 1:
-            print "scons: setting jobs (-j) to %d" % nj
+            print("scons: setting jobs (-j) to %d" % nj)
             SetOption('num_jobs', nj)
             env['NUM_JOBS'] = nj
 
