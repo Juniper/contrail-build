@@ -162,7 +162,7 @@ def TestSuite(env, target, source):
 
 def GetVncAPIPkg(env):
     h,v = env.GetBuildVersion()
-    return '/api-lib/dist/vnc_api-%s.tar.gz' % v
+    return '/api-lib/dist/contrail-api-client-%s.tar.gz' % v
 
 sdist_default_depends = [
     '/config/common/dist/cfgm_common-0.1dev.tar.gz',
