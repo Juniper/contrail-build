@@ -69,11 +69,11 @@ def GetTestEnvironment(test):
     return env
 
 def RunUnitTest(env, target, source, timeout = 300):
-    if env['ENV'].has_key('BUILD_ONLY'):
+    if 'BUILD_ONLY' in env['ENV']:
         return
     import subprocess
 
-    if env['ENV'].has_key('CONTRAIL_UT_TEST_TIMEOUT'):
+    if 'CONTRAIL_UT_TEST_TIMEOUT' in env['ENV']:
         timeout = int(env['ENV']['CONTRAIL_UT_TEST_TIMEOUT'])
 
     test = str(source[0].abspath)
@@ -97,7 +97,7 @@ def RunUnitTest(env, target, source, timeout = 300):
 
     ShEnv.update(GetTestEnvironment(test))
     # Use gprof unless NO_HEAPCHECK is set or in CentOS
-    heap_check = ShEnv.has_key('NO_HEAPCHECK') == False
+    heap_check = 'NO_HEAPCHECK' not in ShEnv
     if heap_check:
         try:
             # Skip HEAPCHECK in CentOS 6.4
