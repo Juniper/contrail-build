@@ -160,15 +160,15 @@ def setup_venv(env, target, venv_name, path=None):
     shell_cmd = ' && '.join ([
         'cd %s' % p,
         'mkdir %s' % tdir,
-        '[ -f %s/ez_setup-0.9.tar.gz ] || curl -o %s/ez_setup-0.9.tar.gz https://pypi.python.org/packages/source/e/ez_setup/ez_setup-0.9.tar.gz' % (tdir,tdir),
+        '[ -f %s/ez_setup-0.9.tar.gz ] || curl -o %s/ez_setup-0.9.tar.gz https://files.pythonhosted.org/packages/ba/2c/743df41bd6b3298706dfe91b0c7ecdc47f2dc1a3104abeb6e9aa4a45fa5d/ez_setup-0.9.tar.gz' % (tdir,tdir),
         '[ -d ez_setup-0.9 ] || tar xzf %s/ez_setup-0.9.tar.gz' % tdir,
-        '[ -f %s/redis-2.6.13.tar.gz ] || (cd %s && wget https://redis.googlecode.com/files/redis-2.6.13.tar.gz)' % (tdir,tdir),
+        '[ -f %s/redis-2.6.13.tar.gz ] || (cd %s && wget https://storage.googleapis.com/google-code-archive-downloads/v2/code.google.com/redis/redis-2.6.13.tar.gz)' % (tdir,tdir),
         '[ -d ../redis-2.6.13 ] || (cd .. && tar xzf %s/redis-2.6.13.tar.gz)' % tdir,
         '[ -f testroot/bin/redis-server ] || ( cd ../redis-2.6.13 && make PREFIX=%s/testroot install)' % p,
         '[ -f %s/Python-2.7.3.tar.bz2 ] || (cd %s && wget --no-check-certificate http://www.python.org/ftp/python/2.7.3/Python-2.7.3.tar.bz2)' % (tdir,tdir),
         '[ -d ../Python-2.7.3 ] || (cd .. && tar xjvf %s/Python-2.7.3.tar.bz2)' % tdir,
         '[ -f testroot/bin/python ] || ( cd ../Python-2.7.3 && ./configure --prefix=%s/testroot && make install ) && ( cd ez_setup-0.9 && ../testroot/bin/python setup.py install)' % p,
-        '[ -f %s/virtualenv-1.10.1.tar.gz ] || curl -o %s/virtualenv-1.10.1.tar.gz https://pypi.python.org/packages/source/v/virtualenv/virtualenv-1.10.1.tar.gz' % (tdir,tdir),
+        '[ -f %s/virtualenv-1.10.1.tar.gz ] || curl -o %s/virtualenv-1.10.1.tar.gz https://files.pythonhosted.org/packages/28/c9/38247a08d6e4ae2cc5b961530581fb80f399b4be209bbfc41de9cf9778d2/virtualenv-1.10.1.tar.gz' % (tdir,tdir),
         '[ -d virtualenv-1.10.1 ] || tar xzvf %s/virtualenv-1.10.1.tar.gz' % tdir,
         'testroot/bin/python virtualenv-1.10.1/virtualenv.py --python=testroot/bin/python %s',
     ])
