@@ -32,3 +32,7 @@ if os.path.exists("openstack/ceilometer_plugin/SConscript"):
 if os.path.exists("contrail-f5/SConscript"):
     SConscript('contrail-f5/SConscript',
                variant_dir='build/noarch/contrail-f5')
+
+if os.path.exists("vcenter-manager/SConscript"):
+    SConscript('vcenter-manager/SConscript',
+               variant_dir='build/noarch/vcenter-manager')
