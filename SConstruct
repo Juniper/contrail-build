@@ -15,15 +15,17 @@ env = rules.SetupBuildEnvironment(conf)
 
 SConscript(dirs=['src/contrail-common', 'controller', 'vrouter'])
 
-SConscript('openstack/nova_contrail_vif/SConscript',
-           variant_dir='build/noarch/nova_contrail_vif')
+if os.path.exists('openstack/nova_contrail_vif/SConscript'):
+    SConscript('openstack/nova_contrail_vif/SConscript',
+               variant_dir='build/noarch/nova_contrail_vif')
 
 if os.path.exists("openstack/contrail-nova-extensions/contrail_network_api/SConscript"):
     SConscript('openstack/contrail-nova-extensions/contrail_network_api/SConscript',
                variant_dir='build/noarch/contrail_nova_networkapi')
 
-SConscript('openstack/neutron_plugin/SConscript',
-           variant_dir='build/noarch/neutron_plugin')
+if os.path.exists('openstack/neutron_plugin/SConscript'):
+    SConscript('openstack/neutron_plugin/SConscript',
+               variant_dir='build/noarch/neutron_plugin')
 
 if os.path.exists("openstack/ceilometer_plugin/SConscript"):
     SConscript('openstack/ceilometer_plugin/SConscript',
