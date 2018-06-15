@@ -36,3 +36,8 @@ if os.path.exists("contrail-f5/SConscript"):
 if os.path.exists("vcenter-manager/SConscript"):
     SConscript('vcenter-manager/SConscript',
                variant_dir='build/noarch/vcenter-manager')
+
+if GetOption("describe-tests"):
+    rules.DescribeTests(env, COMMAND_LINE_TARGETS)
+    Exit(0)
+

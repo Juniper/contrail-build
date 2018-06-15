@@ -2,6 +2,7 @@
 # Copyright (c) 2013 Juniper Networks, Inc. All rights reserved.
 #
 
+import json
 import os
 import re
 from SCons.Builder import Builder
@@ -148,7 +149,17 @@ def TestSuite(env, target, source):
             # UnitTest() may have tagged tests with skip_run attribute
             if getattr( test.attributes, 'skip_run', False ): continue
 
-            cmd = env.Command(test.abspath + '.log', test, RunUnitTest)
+            xml_path = test.abspath + '.xml'
+            log_path = test.abspath + '.log'
+            env.tests.add_test(node_path=log_path, xml_path=xml_path, log_path=log_path)
+
+            # GTest framework uses environment variables to configure how to write
+            # the test output, with GTEST_OUTPUT variable. Make sure targets
+            # don't share their environments, so that GTEST_OUTPUT is not
+            # overwritten.
+            isolated_env = env['ENV'].copy()
+            isolated_env['GTEST_OUTPUT'] = 'xml:' + xml_path
+            cmd = env.Command(log_path, test, RunUnitTest, ENV=isolated_env)
 
             # If BUILD_ONLY set, do not alias foo.log target, to avoid
             # invoking the RunUnitTest() as a no-op (i.e., this avoids
@@ -246,6 +257,10 @@ def SetupPyTestSuiteWithDeps(env, sdist_target, *args, **kwargs):
     env.Alias( d + ':coverage', cov_cmd )
     # env.Depends('test', test_cmd) # XXX This may need to be restored
     env.Depends('coverage', cov_cmd)
+
+    xml_path = env.Dir(".").abspath + "/test-results.xml"
+    log_path = env.Dir(".").abspath + "/test.log"
+    env.tests.add_test(node_path=log_path, xml_path=xml_path, log_path=log_path)
 
 # SetupPyTestSuite()
 #
@@ -1149,6 +1164,20 @@ def determine_job_value():
     print("scons: available jobs = %d" % avail)
     return avail
 
+class UnitTestsCollector(object):
+    """Unit Test collector and processor
+
+    A small class that abstracts collecting unit tests and their metadata.
+    It is used to generate a list of tests from the targets passed to scons,
+    to be used by the CI test runner to better report failures.
+    """
+
+    def __init__(self):
+        self.tests = []
+
+    def add_test(self, node_path, xml_path, log_path):
+        self.tests += [{"node_path": node_path, "xml_path": xml_path,
+		       "log_path": log_path}]
 
 def SetupBuildEnvironment(conf):
     AddOption('--optimization', '--opt', dest = 'opt',
@@ -1164,6 +1193,8 @@ def SetupBuildEnvironment(conf):
     AddOption('--prefix', dest = 'install_prefix', action='store')
     AddOption('--pytest', dest = 'pytest', action='store')
     AddOption('--without-dpdk', dest = 'without-dpdk',
+              action='store_true', default=False)
+    AddOption('--describe-tests', dest = 'describe-tests',
               action='store_true', default=False)
 
     env = CheckBuildConfiguration(conf)
@@ -1276,6 +1307,7 @@ def SetupBuildEnvironment(conf):
         env['PYTESTARG'] = pytest
     else:
         env['PYTESTARG'] = None
+    env.tests = UnitTestsCollector()
 
     # Store path to sandesh compiler in the env
     env['SANDESH'] = os.path.join(env.Dir(env['TOP_BIN']).path, 'sandesh' + env['PROGSUFFIX'])
@@ -1406,5 +1438,45 @@ def SetupBuildEnvironment(conf):
     env.AddMethod(UseCassandraCql, "UseCassandraCql")
     env.AddMethod(CppDisableExceptions, "CppDisableExceptions")
     env.AddMethod(CppEnableExceptions, "CppEnableExceptions")
+
     return env
 # SetupBuildEnvironment
+
+def resolve_alias_dependencies(env, aliases):
+    """Given alias string, return all its leaf dependencies.
+
+    SCons aliases can depend on SCons nodes, or other aliases. Recursively
+    resolve aliases to actual dependencies.
+    """
+    nodes = set()
+    for alias in aliases:
+        assert isinstance(alias, SCons.Node.Alias.Alias)
+        for node in alias.children():
+            if isinstance(node, SCons.Node.Alias.Alias):
+                nodes |= (resolve_alias_dependencies(env, [node]))
+            else:
+                nodes.add(node)
+    return nodes
+
+def DescribeTests(env, targets):
+    """Given a set of targets, print out JSON Lines encoded tests."""
+    node_paths = []
+    for target in targets:
+        scons_aliases = env.arg2nodes(target)
+        nodes = resolve_alias_dependencies(env, scons_aliases)
+        node_paths += [n.abspath for n in nodes]
+
+    matched_tests = []
+    for test in env.tests.tests:
+        path = test['node_path']
+        if path in node_paths:
+            test['matched'] = True
+            matched_tests += [test]
+            node_paths.remove(path)
+
+    for test in matched_tests:
+        print(json.dumps(test))
+
+    for node_path in node_paths:
+        dangling_node = {"node_path": node_path, "matched": False}
+        print(json.dumps(dangling_node))
