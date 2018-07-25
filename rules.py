@@ -96,15 +96,18 @@ def RunUnitTest(env, target, source, timeout = 300):
                   'TOP_OBJECT_PATH': env['TOP'][1:]})
 
     ShEnv.update(GetTestEnvironment(test))
-    # Use gprof unless NO_HEAPCHECK is set or in CentOS
+    # Use gprof unless NO_HEAPCHECK is set or in CentOS or in Windows
     heap_check = 'NO_HEAPCHECK' not in ShEnv
     if heap_check:
-        try:
-            # Skip HEAPCHECK in CentOS 6.4
-            subprocess.check_call("grep -q \"CentOS release 6.4\" /etc/issue 2>/dev/null", shell=True)
+        if platform.system() == 'Windows':
             heap_check = False
-        except:
-            pass
+        else:
+            try:
+                # Skip HEAPCHECK in CentOS 6.4
+                subprocess.check_call("grep -q \"CentOS release 6.4\" /etc/issue 2>/dev/null", shell=True)
+                heap_check = False
+            except:
+                pass
 
     if heap_check:
         ShEnv['HEAPCHECK'] = 'normal'
@@ -503,16 +506,15 @@ def GenerateBuildInfoPyCode(env, target, source, path):
 
     # Fetch Time in UTC
     import datetime
-    build_time = unicode(datetime.datetime.utcnow())
+    build_time = datetime.datetime.utcnow()
 
     build_git_info, build_version = GetBuildVersion(env)
 
     # build json string containing build information
     build_info = "{\\\"build-info\\\" : [{\\\"build-version\\\" : \\\"" + str(build_version) + "\\\", \\\"build-time\\\" : \\\"" + str(build_time) + "\\\", \\\"build-user\\\" : \\\"" + build_user + "\\\", \\\"build-hostname\\\" : \\\"" + build_host + "\\\", "
     py_code ="build_info = \""+ build_info + "\";\n"
-    py_file = file(path + '/buildinfo.py', 'w')
-    py_file.write(py_code)
-    py_file.close()
+    with open(path + '/buildinfo.py', 'w') as py_file:
+        py_file.write(py_code)
 
     return target
 
