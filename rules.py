@@ -1162,6 +1162,10 @@ def SetupBuildEnvironment(conf):
               action='store',
               choices = ['i686', 'x86_64', 'armhf'])
 
+    AddOption('--machine', dest = 'machine',
+                action='store',
+                choices = ['native', 'hsw', 'snb', 'ivb'])
+
     AddOption('--root', dest = 'install_root', action='store')
     AddOption('--prefix', dest = 'install_prefix', action='store')
     AddOption('--pytest', dest = 'pytest', action='store')
@@ -1186,6 +1190,7 @@ def SetupBuildEnvironment(conf):
 
     env['OPT'] = GetOption('opt')
     env['TARGET_MACHINE'] = GetOption('target')
+    env['CPU_TYPE'] = GetOption('machine')
     env['INSTALL_PREFIX'] = GetOption('install_prefix')
     env['INSTALL_BIN'] = ''
     env['INSTALL_SHARE'] = ''
@@ -1268,6 +1273,15 @@ def SetupBuildEnvironment(conf):
         env.Append(CCFLAGS = '-march=' + 'i686')
     elif env.get('TARGET_MACHINE') == 'armhf' or platform.machine().startswith('arm'):
         env.Append(CCFLAGS=['-DTBB_USE_GCC_BUILTINS=1', '-D__TBB_64BIT_ATOMICS=0'])
+
+    if env.get('CPU_TYPE') == 'native':
+        env.Append(CCFLAGS = '-march=' + 'native')
+    elif env.get('CPU_TYPE') == 'snb':
+        env.Append(CCFLAGS = '-march=' + 'corei7-avx')
+    elif env.get('CPU_TYPE') == 'ivb':
+        env.Append(CCFLAGS = '-march=' + 'core-avx-i')
+    elif env.get('CPU_TYPE') == 'hsw':
+        env.Append(CCFLAGS = '-march=' + 'core-avx2')
 
     env['TOP_BIN'] = '#build/bin'
     env['TOP_INCLUDE'] = '#build/include'
