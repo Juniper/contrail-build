@@ -1171,8 +1171,12 @@ def SetupBuildEnvironment(conf):
               help='optimization level: [debug|production|coverage|profile|valgrind]')
 
     AddOption('--target', dest = 'target',
-              action='store',
+              action='store', default='x86_64',
               choices = ['i686', 'x86_64', 'armhf'])
+
+    AddOption('--cpu', dest = 'cpu',
+                action='store',
+                choices = ['native', 'hsw', 'snb', 'ivb'])
 
     AddOption('--root', dest = 'install_root', action='store')
     AddOption('--prefix', dest = 'install_prefix', action='store')
@@ -1198,6 +1202,7 @@ def SetupBuildEnvironment(conf):
 
     env['OPT'] = GetOption('opt')
     env['TARGET_MACHINE'] = GetOption('target')
+    env['CPU_TYPE'] = GetOption('cpu')
     env['INSTALL_PREFIX'] = GetOption('install_prefix')
     env['INSTALL_BIN'] = ''
     env['INSTALL_SHARE'] = ''
