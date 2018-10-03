@@ -897,18 +897,18 @@ def ThriftServicesFunc(node):
     contents = node.get_text_contents()
     return ThriftServiceRe.findall(contents)
 
-def ThriftSconsEnvFunc(env, async):
+def ThriftSconsEnvFunc(env, asynch):
     opath = env.Dir('.').abspath
     thriftcmd = os.path.join(env.Dir(env['TOP_BIN']).abspath, 'thrift')
-    if async:
+    if asynch:
         lstr = thriftcmd + ' --gen cpp:async -o ' + opath + ' $SOURCE'
     else:
         lstr = thriftcmd + ' --gen cpp -o ' + opath + ' $SOURCE'
     cppbuild = Builder(action = lstr)
     env.Append(BUILDERS = {'ThriftCpp' : cppbuild})
 
-def ThriftGenCppFunc(env, file, async):
-    ThriftSconsEnvFunc(env, async)
+def ThriftGenCppFunc(env, file, asynch):
+    ThriftSconsEnvFunc(env, asynch)
     suffixes = ['_types.h', '_constants.h', '_types.cpp', '_constants.cpp']
     basename = Basename(file)
     base_files = map(lambda s: 'gen-cpp/' + basename + s, suffixes)
