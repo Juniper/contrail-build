@@ -995,7 +995,6 @@ def CreateTypeBuilder(env):
 
 # Check for unsupported/buggy compilers.
 def CheckBuildConfiguration(conf):
-
     # gcc 4.7.0 generates buggy code when optimization is turned on.
     opt_level = GetOption('opt')
     if ((opt_level == 'production' or opt_level == 'profile') and \
@@ -1004,7 +1003,32 @@ def CheckBuildConfiguration(conf):
             print("Unsupported/Buggy compiler gcc 4.7.0 for building " + \
                   "optimized binaries")
             raise convert_to_BuildError(1)
+    # Specific versions of MS C++ compiler are not supported for
+    # "production" build.
+    if opt_level == 'production' and conf.env['CC'] == 'cl':
+        if not VerifyClVersion():
+            print("Unsupported MS C++ compiler for building " +
+                  "optimized binaries")
+            raise convert_to_BuildError(1)
     return conf.Finish()
+
+def VerifyClVersion():
+    # Microsoft C++ 19.00.24210 is known to produce incorrectly working Agent
+    # in "production" build as it is described in bug #1802130.
+    # Undesired behaviour has been mitigated by code change in Agent.
+    # However, this compiler version (and all older) are considered "unsafe"
+    # and luckily there's no reason to use them. MS VC 2015 Update 3 provides
+    # newer version of the compiler.
+    minimum_cl_version = [19, 0, 24215, 1]
+
+    # Unfortunately there's no better way to check the CL version
+    process = subprocess.run(['cl.exe'], capture_output=True, encoding='ASCII')
+    regex_string = "Microsoft \(R\) C/C\+\+ [\s\w]*Version ([0-9]+)\." +\
+                   "([0-9]+)\.([0-9]+)(?:\.([0-9]+))?[\s\w]*"
+    regex_parser = re.compile(regex_string)
+    match = regex_parser.match(process.stderr)
+    our_cl_version = [int(x or 0) for x in (match.groups())]
+    return our_cl_version >= minimum_cl_version
 
 def PyTestSuiteCov(target, source, env):
     for test in source:
