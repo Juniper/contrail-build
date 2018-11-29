@@ -1037,11 +1037,11 @@ def VerifyClVersion():
     minimum_cl_version = [19, 0, 24215, 1]
 
     # Unfortunately there's no better way to check the CL version
-    process = subprocess.run(['cl.exe'], capture_output=True, encoding='ASCII')
+    output = subprocess.check_output(['cl.exe'], stderr=subprocess.STDOUT, encoding='ASCII')
     regex_string = "Microsoft \(R\) C/C\+\+ [\s\w]*Version ([0-9]+)\." +\
                    "([0-9]+)\.([0-9]+)(?:\.([0-9]+))?[\s\w]*"
     regex_parser = re.compile(regex_string)
-    match = regex_parser.match(process.stderr)
+    match = regex_parser.match(output)
     our_cl_version = [int(x or 0) for x in (match.groups())]
     return our_cl_version >= minimum_cl_version
 
