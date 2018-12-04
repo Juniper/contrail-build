@@ -7,8 +7,9 @@ import os
 import re
 from SCons.Builder import Builder
 from SCons.Action import Action
-from SCons.Errors import convert_to_BuildError
+from SCons.Errors import convert_to_BuildError, BuildError
 from SCons.Script import AddOption, GetOption, SetOption
+from distutils.spawn import find_executable
 from distutils.version import LooseVersion, StrictVersion
 import json
 import SCons.Util
@@ -1217,6 +1218,10 @@ class UnitTestsCollector(object):
         self.tests += [{"node_path": node_path, "xml_path": xml_path,
 		       "log_path": log_path}]
 
+def EnsureBuildDependency(env, dependency):
+    if not find_executable(dependency):
+        raise BuildError(errstr='The \'{}\' utility was not found in the PATH.'.format(dependency))
+
 def SetupBuildEnvironment(conf):
     AddOption('--optimization', '--opt', dest = 'opt',
               action='store', default='debug',
@@ -1445,8 +1450,9 @@ def SetupBuildEnvironment(conf):
 
     # A few methods to enable/support UTs and BUILD_ONLY
     env.AddMethod(GetVncAPIPkg, 'GetVncAPIPkg')
-    env.AddMethod(SetupPyTestSuite, 'SetupPyTestSuite' )
-    env.AddMethod(SetupPyTestSuiteWithDeps, 'SetupPyTestSuiteWithDeps' )
+    env.AddMethod(SetupPyTestSuite, 'SetupPyTestSuite')
+    env.AddMethod(SetupPyTestSuiteWithDeps, 'SetupPyTestSuiteWithDeps')
+    env.AddMethod(EnsureBuildDependency, 'EnsureBuildDependency')
 
     env.AddMethod(ExtractCppFunc, "ExtractCpp")
     env.AddMethod(ExtractCFunc, "ExtractC")
