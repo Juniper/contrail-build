@@ -574,13 +574,13 @@ def ProtocDescBuilder(target, source, env):
     if not env.Detect('protoc'):
         raise SCons.Errors.StopError(
             'protoc Compiler not detected on system')
-    etcd_incl = os.environ.get('CONTRAIL_ETCD_INCL')
-    if etcd_incl:
-        protoc = env.Dir('#/third_party/grpc/bins/opt/protobuf').abspath + '/protoc'
-        protop = ' --proto_path=build/include/ '
-    else:
-        protoc = env.WhereIs('protoc')
-        protop = ' --proto_path=/usr/include/ '
+    #etcd_incl = os.environ.get('CONTRAIL_ETCD_INCL')
+    #if etcd_incl:
+    protoc = env.Dir('#/third_party/grpc/bins/opt/protobuf').abspath + '/protoc'
+    protop = ' --proto_path=build/include/ '
+    #else:
+    #    protoc = env.WhereIs('protoc')
+    #    protop = ' --proto_path=/usr/include/ '
     protoc_cmd = protoc + ' --descriptor_set_out=' + \
         str(target[0]) + ' --include_imports ' + \
         ' --proto_path=controller/src/' + \
@@ -610,13 +610,13 @@ def ProtocCppBuilder(target, source, env):
     if not env.Detect('protoc'):
         raise SCons.Errors.StopError(
             'protoc Compiler not detected on system')
-    etcd_incl = os.environ.get('CONTRAIL_ETCD_INCL')
-    if etcd_incl:
-        protoc = env.Dir('#/third_party/grpc/bins/opt/protobuf').abspath + '/protoc'
-        protop = ' --proto_path=build/include/ '
-    else:
-        protoc = env.WhereIs('protoc')
-        protop = ' --proto_path=/usr/include/ '
+    #etcd_incl = os.environ.get('CONTRAIL_ETCD_INCL')
+    #if etcd_incl:
+    protoc = env.Dir('#/third_party/grpc/bins/opt/protobuf').abspath + '/protoc'
+    protop = ' --proto_path=build/include/ '
+    #else:
+    #    protoc = env.WhereIs('protoc')
+    #    protop = ' --proto_path=/usr/include/ '
     protoc_cmd = protoc + protop + \
         ' --proto_path=src/contrail-analytics/contrail-collector/ ' + \
         '--proto_path=controller/src/ --proto_path=' + \
