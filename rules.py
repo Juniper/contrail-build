@@ -181,7 +181,7 @@ def GetVncAPIPkg(env):
 sdist_default_depends = [
     '/config/common/dist/cfgm_common-0.1dev.tar.gz',
     '/tools/sandesh/library/python/dist/sandesh-0.1dev.tar.gz',
-    '/sandesh/common/dist/sandesh-common-0.1dev.tar.gz',
+    '/sandesh/common/dist/sandesh-common-0.1.dev0.tar.gz',
 ]
 
 # SetupPyTestSuiteWithDeps
