@@ -7,13 +7,19 @@
 # repository root directory
 import os
 import sys
+
 sys.path.append('tools/build')
 
 import rules
 conf = Configure(DefaultEnvironment(ENV = os.environ))
 env = rules.SetupBuildEnvironment(conf)
 
-SConscript(dirs=['src/contrail-common', 'controller', 'vrouter'])
+if sys.platform.startswith('win'):
+    SConscript(dirs=['windows', 'src/contrail-common', 'controller', 'vrouter'])
+else:
+    SConscript(dirs=['src/contrail-common', 'controller', 'vrouter'])
+
+
 
 if os.path.exists('openstack/nova_contrail_vif/SConscript'):
     SConscript('openstack/nova_contrail_vif/SConscript',
