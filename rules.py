@@ -1390,6 +1390,8 @@ def SetupBuildEnvironment(conf):
         env.Append(CCFLAGS = ['/D_SCL_SECURE_NO_WARNINGS', '/D_CRT_SECURE_NO_WARNINGS'])
         # Stop Windows.h from including a lot of useless header files
         env.Append(CCFLAGS = '/DWIN32_LEAN_AND_MEAN')
+        # Use Boost dynamic libraries
+        env.Append(CCFLAGS = '/DBOOST_ALL_DYN_LINK')
 
     opt_level = env['OPT']
     if opt_level == 'production':
