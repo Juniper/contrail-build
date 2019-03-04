@@ -8,6 +8,7 @@
 import os
 import sys
 
+os.environ['CONTRAIL_ETCD_INCL'] = '1'
 sys.path.append('tools/build')
 
 import rules
@@ -17,7 +18,7 @@ env = rules.SetupBuildEnvironment(conf)
 if sys.platform.startswith('win'):
     SConscript(dirs=['windows', 'src/contrail-common', 'controller', 'vrouter'])
 else:
-    SConscript(dirs=['src/contrail-common', 'controller', 'vrouter'])
+    SConscript(dirs=['controller/lib/grpc','src/contrail-common', 'controller', 'vrouter'])
 
 
 
