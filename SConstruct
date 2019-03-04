@@ -8,6 +8,7 @@
 import os
 import sys
 
+os.environ['CONTRAIL_ETCD_INCL'] = '1'
 sys.path.append('tools/build')
 
 import rules
