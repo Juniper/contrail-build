@@ -13,6 +13,7 @@ sys.path.append('tools/build')
 import rules
 conf = Configure(DefaultEnvironment(ENV = os.environ))
 env = rules.SetupBuildEnvironment(conf)
+env.GenerateGrpcCode()
 
 if sys.platform.startswith('win'):
     SConscript(dirs=['windows', 'src/contrail-common', 'controller', 'vrouter'])
