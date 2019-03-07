@@ -539,6 +539,47 @@ def GenerateBuildInfoPyCode(env, target, source, path):
 def Basename(path):
     return path.rsplit('.', 1)[0]
 
+def GenerateGrpcCode(env, source, path):
+    import os
+    import subprocess
+    import platform
+
+    vpath = '#third_party/grpc'
+    inspath = '#third_party'
+    cpppath = '#build/include'
+
+    # Set environment variable to compile ETCD code
+    os.environ['CONTRAIL_ETCD_INCL'] = '1'
+
+    # Get the platform distribution
+    pdist = platform.dist()[0]
+
+    # Create #build/include directory if not present
+    if not os.path.exists(env.Dir(cpppath).abspath):
+        os.makedirs(env.Dir(cpppath).abspath)
+
+    # Pull the grpc repo (if not present), submodule source code and run make
+    if not os.path.exists(env.Dir(vpath).abspath) or os.listdir(env.Dir(vpath).abspath) == []:
+        if subprocess.check_output('curl -s http://10.84.5.100/cs-shared/ananth/grpc/' + pdist,
+                                   shell=True):
+            cmd = ('cd ' + env.Dir(inspath).abspath + '; ' +
+                   'curl -s http://10.84.5.100/cs-shared/ananth/grpc/' + pdist +
+                   '/grpc.txz | tar Jxf -; ')
+        else:
+            cmd = ('cd ' + env.Dir(inspath).abspath + '; ' +
+                   'git clone -b v1.13.x https://github.com/grpc/grpc; ' +
+                   'cd ' + env.Dir(vpath).abspath + '; ' +
+                   'git submodule update --init --recursive; ')
+    else:
+        cmd = ''
+
+    # Copy the libraries to #build/lib and header files to #build/include
+    target_cmd = ('cd ' + env.Dir(cpppath).abspath + '; ' +
+                      'cp ' + env.Dir(vpath).abspath + '/include/* . -R; ' +
+                      'cp ' + env.Dir(vpath).abspath + '/third_party/protobuf/src/google . -R; ')
+
+    code = subprocess.call(cmd + target_cmd, shell=True)
+
 # ExtractCpp Method
 def ExtractCppFunc(env, filelist):
     CppSrcs = []
@@ -1442,7 +1483,7 @@ def SetupBuildEnvironment(conf):
     env.Append(BUILDERS = {'GenerateBuildInfoCode': GenerateBuildInfoCode})
     env.Append(BUILDERS = {'GenerateBuildInfoPyCode': GenerateBuildInfoPyCode})
     env.Append(BUILDERS = {'GenerateBuildInfoCCode': GenerateBuildInfoCCode})
-
+    env.Append(BUILDERS = {'GenerateGrpcCode': GenerateGrpcCode})
     env.Append(BUILDERS = {'setup_venv': setup_venv})
     env.Append(BUILDERS = {'venv_add_pip_pkg': venv_add_pip_pkg })
     env.Append(BUILDERS = {'venv_add_build_pkg': venv_add_build_pkg })
