@@ -49,3 +49,6 @@ if GetOption("describe-tests"):
     rules.DescribeTests(env, COMMAND_LINE_TARGETS)
     Exit(0)
 
+if GetOption("describe-aliases"):
+    rules.DescribeAliases()
+    Exit(0)

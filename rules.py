@@ -9,6 +9,7 @@ from SCons.Builder import Builder
 from SCons.Action import Action
 from SCons.Errors import convert_to_BuildError, BuildError
 from SCons.Script import AddOption, GetOption, SetOption
+from SCons.Node import Alias
 from distutils.spawn import find_executable
 from distutils.version import LooseVersion, StrictVersion
 import json
@@ -1243,6 +1244,8 @@ def SetupBuildEnvironment(conf):
               action='store_true', default=False)
     AddOption('--describe-tests', dest = 'describe-tests',
               action='store_true', default=False)
+    AddOption('--describe-aliases', dest = 'describe-aliases',
+              action='store_true', default=False)
 
     env = CheckBuildConfiguration(conf)
 
@@ -1501,9 +1504,9 @@ def resolve_alias_dependencies(env, aliases):
     """
     nodes = set()
     for alias in aliases:
-        assert isinstance(alias, SCons.Node.Alias.Alias)
+        assert isinstance(alias, Alias.Alias)
         for node in alias.children():
-            if isinstance(node, SCons.Node.Alias.Alias):
+            if isinstance(node, Alias.Alias):
                 nodes |= (resolve_alias_dependencies(env, [node]))
             else:
                 nodes.add(node)
@@ -1531,3 +1534,9 @@ def DescribeTests(env, targets):
     for node_path in node_paths:
         dangling_node = {"node_path": node_path, "matched": False}
         print(json.dumps(dangling_node))
+
+def DescribeAliases():
+    print('Available Build Aliases:')
+    print('------------------------')
+    for alias in sorted(Alias.default_ans.keys()):
+        print(alias)
