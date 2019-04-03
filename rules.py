@@ -101,7 +101,8 @@ def RunUnitTest(env, target, source, timeout = 300):
     # Use gprof unless NO_HEAPCHECK is set or in CentOS or in Windows
     heap_check = 'NO_HEAPCHECK' not in ShEnv
     if heap_check:
-        if platform.system() == 'Windows':
+        if platform.system() == 'Windows' or env.get('OPT') == 'coverage' or \
+                env.get('OPT') == 'cplusplus_coverage':
             heap_check = False
         else:
             try:
@@ -1222,11 +1223,30 @@ def EnsureBuildDependency(env, dependency):
     if not find_executable(dependency):
         raise BuildError(errstr='The \'{}\' utility was not found in the PATH.'.format(dependency))
 
+def RunCodeCoverage(env):
+    os.chdir(env.Dir('#').abspath)
+    sys.stdout = open('code_coverage.log', 'w')
+    commands ='''
+rm -rf build/cplusplus_coverage
+python third_party/fetch_packages.py
+scons -uij32 --optimization=cplusplus_coverage controller/cplusplus_test
+lcov --base-directory build/cplusplus_coverage --directory build/cplusplus_coverage -c -o build/cplusplus_coverage/controller_test.info
+genhtml -o build/cplusplus_coverage/controller/test_coverage -t "test coverage" --num-spaces 4 build/cplusplus_coverage/controller_test.info
+echo rm -rf /cs-shared/contrail_code_coverage/test_coverage
+echo cp -a build/cplusplus_coverage/controller/test_coverage /cs-shared/contrail_code_coverage/
+echo Visit http://10.84.5.100/cs-shared/contrail_code_coverage/test_coverage/
+'''
+    for cmd in commands.splitlines():
+        print(subprocess.check_output(cmd, shell=True))
+    sys.exit(0)
+
 def SetupBuildEnvironment(conf):
     AddOption('--optimization', '--opt', dest = 'opt',
               action='store', default='debug',
-              choices = ['debug', 'production', 'coverage', 'profile', 'valgrind'],
-              help='optimization level: [debug|production|coverage|profile|valgrind]')
+              choices = ['debug', 'production', 'coverage', 'profile',
+                         'valgrind', 'cplusplus_coverage',
+                         'run_cplusplus_coverage'],
+              help='optimization level: [debug|production|coverage|profile|valgrind|cplusplus_coverage]')
 
     AddOption('--target', dest = 'target',
               action='store', default='x86_64',
@@ -1428,6 +1448,13 @@ def SetupBuildEnvironment(conf):
     elif opt_level == 'valgrind':
         env.Append(CCFLAGS = ['-O0', '-DDEBUG'])
         env['TOP'] = '#build/valgrind'
+    elif opt_level == 'cplusplus_coverage':
+        env.Append(CCFLAGS = ['-O0', '--coverage'])
+        env['TOP'] = '#build/cplusplus_coverage'
+        env.Append(LIBS = 'gcov')
+    elif opt_level == 'run_cplusplus_coverage':
+        env['TOP'] = '#build/cplusplus_coverage'
+        RunCodeCoverage(env)
 
     if not "CONTRAIL_COMPILE_WITHOUT_SYMBOLS" in os.environ:
         if sys.platform == 'win32':
