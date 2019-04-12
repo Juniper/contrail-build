@@ -1390,7 +1390,11 @@ def SetupBuildEnvironment(conf):
         # Disable GDI to avoid conflicts with macros
         env.Append(CCFLAGS = '/DNOGDI')
         # Disable MSVC paranoid warnings
-        env.Append(CCFLAGS = ['/D_SCL_SECURE_NO_WARNINGS', '/D_CRT_SECURE_NO_WARNINGS'])
+        env.Append(CCFLAGS = [
+            '/D_SCL_SECURE_NO_WARNINGS',
+            '/D_CRT_SECURE_NO_WARNINGS',
+            '/D_CRT_NONSTDC_NO_WARNINGS',
+        ])
         # Stop Windows.h from including a lot of useless header files
         env.Append(CCFLAGS = '/DWIN32_LEAN_AND_MEAN')
         # Use Boost dynamic libraries
