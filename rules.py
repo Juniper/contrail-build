@@ -1404,11 +1404,14 @@ def SetupBuildEnvironment(conf):
     if opt_level == 'production':
         if sys.platform == 'win32':
             env['VS_BUILDMODE'] = 'Release'
-            # Enable full compiler optimization
-            env.Append(CCFLAGS = '/Ox')
+            # Enable compiler optimizations for speed
+            env.Append(CCFLAGS = '/O2')
             # Enable multithreaded release dll build
             env.Append(CCFLAGS = '/MD')
-            # Enable linker whole program optimization
+            # Enable compiler whole program optimization
+            env.Append(CCFLAGS = '/GL')
+            # Enable link-time code generation
+            env.Append(ARFLAGS = '/LTCG')
             env.Append(LINKFLAGS = '/LTCG')
         else:
             env.Append(CCFLAGS = '-O3')
