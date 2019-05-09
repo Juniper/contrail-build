@@ -1408,11 +1408,6 @@ def SetupBuildEnvironment(conf):
             env.Append(CCFLAGS = '/O2')
             # Enable multithreaded release dll build
             env.Append(CCFLAGS = '/MD')
-            # Enable compiler whole program optimization
-            env.Append(CCFLAGS = '/GL')
-            # Enable link-time code generation
-            env.Append(ARFLAGS = '/LTCG')
-            env.Append(LINKFLAGS = '/LTCG')
         else:
             env.Append(CCFLAGS = '-O3')
         env['TOP'] = '#build/production'
