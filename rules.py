@@ -181,7 +181,7 @@ def GetVncAPIPkg(env):
     return '/api-lib/dist/contrail-api-client-%s.tar.gz' % v
 
 sdist_default_depends = [
-    '/config/common/dist/cfgm_common-0.1dev.tar.gz',
+    '/config/common/dist/contrail-config-common-0.1dev.tar.gz',
     '/tools/sandesh/library/python/dist/sandesh-0.1dev.tar.gz',
     '/sandesh/common/dist/sandesh-common-0.1dev.tar.gz',
 ]
