@@ -20,6 +20,8 @@ import time
 import platform
 import getpass
 import warnings
+import errno
+import shlex
 
 def GetPlatformInfo(env):
     '''
@@ -1474,6 +1476,7 @@ def SetupBuildEnvironment(conf):
     env.AddMethod(SandeshGenPyFunc, "SandeshGenPy")
     env.AddMethod(SandeshGenDocFunc, "SandeshGenDoc")
     env.AddMethod(GoCniFunc, "GoCniBuild")
+    env.AddMethod(GoBuildFunc, "GoBuild")
     env.AddMethod(ThriftGenCppFunc, "ThriftGenCpp")
     ThriftSconsEnvPyFunc(env)
     env.AddMethod(ThriftGenPyFunc, "ThriftGenPy")
@@ -1542,3 +1545,52 @@ def DescribeAliases():
     print('------------------------')
     for alias in sorted(Alias.default_ans.keys()):
         print(alias)
+
+def GoSetupCommon(env, goCommand='', changeWorkingDir=True):
+    if not env.Detect('go'):
+        raise SCons.Errors.StopError('no go command detected on system')
+
+    if goCommand != '':
+        args = shlex.split(goCommand)
+        #workingDir = go_build_src_dir
+        workingDir = None
+        if changeWorkingDir == False:
+            workingDir = None
+        popen_env = env['ENV']
+        popen_env['GOROOT'] = env.Dir('#/third_party/go').abspath
+        popen_env['GOPATH'] = env.Dir('#/controller').abspath
+        try:
+            process = subprocess.Popen(args,
+                                       cwd=workingDir,
+                                       stdout=subprocess.PIPE,
+                                       stdin=subprocess.PIPE,
+                                       env=popen_env)
+            out, err = process.communicate()
+            if process.returncode != 0:
+                raise SCons.Errors.StopError( goCommand + ' failed')
+        except Exception as e:
+            print("Got Exception, ", e)
+            raise SCons.Errors.StopError( goCommand + ' got exception')
+
+def GoBuilder(target, source, env):
+    gobuild_cmd = 'go build -o ' + str(target) + ' ' + str(source)
+    go_working_dir = GoSetupCommon(env, gobuild_cmd, False)
+
+#GoBuild starting
+def GoBuildFunc(env, source, target):
+    source_path = env.Dir('#/' + env.Dir('.').srcnode().path).abspath + '/' + source
+    target_path = env.Dir(env['TOP']).abspath + '/'+ target
+    MkdirP(target_path)
+    target_file  = target_path  + '/' + target
+    GoBuilder(target_file, source_path, env)
+    return
+
+def MkdirP(path):
+    try:
+        os.makedirs(path)
+    except OSError as exc:  # Python >2.5
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else:
+            raise
+
