@@ -20,6 +20,8 @@ import time
 import platform
 import getpass
 import warnings
+import errno
+import shlex
 
 def GetPlatformInfo(env):
     '''
@@ -181,7 +183,7 @@ def GetVncAPIPkg(env):
     return '/api-lib/dist/contrail-api-client-%s.tar.gz' % v
 
 sdist_default_depends = [
-    '/config/common/dist/contrail-config-common-0.1dev.tar.gz',
+    '/config/common/dist/cfgm_common-0.1dev.tar.gz',
     '/tools/sandesh/library/python/dist/sandesh-0.1dev.tar.gz',
     '/sandesh/common/dist/sandesh-common-0.1dev.tar.gz',
 ]
@@ -1474,6 +1476,9 @@ def SetupBuildEnvironment(conf):
     env.AddMethod(SandeshGenPyFunc, "SandeshGenPy")
     env.AddMethod(SandeshGenDocFunc, "SandeshGenDoc")
     env.AddMethod(GoCniFunc, "GoCniBuild")
+    env.AddMethod(GoBuildFunc, "GoBuild")
+    env.AddMethod(GoLintFunc, "GoLint")
+    env.AddMethod(GoDepsFunc, "GoDeps")
     env.AddMethod(ThriftGenCppFunc, "ThriftGenCpp")
     ThriftSconsEnvPyFunc(env)
     env.AddMethod(ThriftGenPyFunc, "ThriftGenPy")
@@ -1542,3 +1547,86 @@ def DescribeAliases():
     print('------------------------')
     for alias in sorted(Alias.default_ans.keys()):
         print(alias)
+
+def GoSetupCommon(env, goCommand='', changeWorkingDir=True):
+    if not env.Detect('go'):
+        raise SCons.Errors.StopError('go command detected on system')
+
+    go_build_src_dir = str(env.Dir(env['TOP']).abspath) + '/src/github.com/Juniper/contrail-controller/src'
+    go_link_src_dir = go_build_src_dir + '/go'
+    mkdir_p(go_build_src_dir)
+    go_src_dir = str(env.Dir(env['TOP']).abspath) + '/../../controller/src/go'
+    create_symlink(go_src_dir, go_link_src_dir)
+
+    if goCommand != '':
+        args = shlex.split(goCommand)
+        workingDir = go_build_src_dir
+        if changeWorkingDir == False:
+            workingDir = None
+        process = subprocess.Popen(args,  cwd=workingDir, stdout=subprocess.PIPE, stdin=subprocess.PIPE )
+        out, err = process.communicate()
+        #print ("OUTPUT : ", out, err)
+        if process.returncode != 0:
+            raise SCons.Errors.StopError( goCommand + ' failed')
+
+    
+def GoBuilder(target, source, env):
+    gobuild_cmd = 'go build -o ' + str(target[0]) + ' ' + str(source[0])
+    go_working_dir = GoSetupCommon(env, gobuild_cmd, False)
+
+def GoLinter(target, source, env):
+    golint_cmd = './' + env['ENV']['SRC_PATH'] + '/tools/lint.sh '
+    go_working_dir = GoSetupCommon(env, golint_cmd)
+
+def GoDepends(target, source, env):
+    godeps_cmd = './' + env['ENV']['SRC_PATH'] + '/tools/deps.sh '
+    go_working_dir = GoSetupCommon(env, godeps_cmd)
+
+def GoBuildEnv(env):
+    goBuilder = Builder(action = Action(GoBuilder,'GoBuilder $SOURCE -> $TARGETS'))
+    env.Append(BUILDERS = {'gobuild': goBuilder })
+    goLinter = Builder(action = Action(GoLinter,'GoLinter $SOURCE -> $TARGETS'))
+    env.Append(BUILDERS = {'golint': goLinter })
+    goDeps = Builder(action = Action(GoDepends,'GoDepends $SOURCE -> $TARGETS'))
+    env.Append(BUILDERS = {'godeps': goDeps })
+
+#GoDeps starting 
+def GoDepsFunc(env, path, target=''):
+    GoBuildEnv(env)
+    print ("PATH = ", path)
+    print("Target = ", target)
+    #gobuild is builder name from GoBuildEnv()
+    env.godeps(target, path)
+
+#GoLint starting 
+def GoLintFunc(env, path, target=''):
+    GoBuildEnv(env)
+    #gobuild is builder name from GoBuildEnv()
+    env.golint(target, path)
+
+#GoBuild starting 
+def GoBuildFunc(env, path, target=''):
+    GoBuildEnv(env)
+    #gobuild is builder name from GoBuildEnv()
+    env.gobuild(target, path)
+
+def mkdir_p(path):
+    """ 'mkdir -p' in Python """
+    print (path)
+    try:
+        os.makedirs(path)
+    except OSError as exc:  # Python >2.5
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else:
+            raise
+
+def create_symlink(src, dest):
+    try:
+        os.symlink( src, dest)
+    except OSError as exc:  # Python >2.5
+        if exc.errno == errno.EEXIST:
+            pass
+        else:
+            raise
+
