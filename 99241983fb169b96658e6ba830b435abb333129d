@@ -19,6 +19,24 @@
     },
     {
       "key": {
+        "uuid": "f3ca2232_30c74b04",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 6
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 79
+      },
+      "writtenOn": "2019-07-17T04:57:02Z",
+      "side": 1,
+      "message": "this is mainly to identify changes into each patchset.",
+      "parentUuid": "90b6cdf6_05ccc8d3",
+      "revId": "99241983fb169b96658e6ba830b435abb333129d",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "6e551130_b9ad4580",
         "filename": "rules.py",
         "patchSetId": 6
@@ -33,6 +51,24 @@
       "revId": "99241983fb169b96658e6ba830b435abb333129d",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "735d3c74_4bbdfc46",
+        "filename": "rules.py",
+        "patchSetId": 6
+      },
+      "lineNbr": 1551,
+      "author": {
+        "id": 79
+      },
+      "writtenOn": "2019-07-17T04:57:02Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "6e551130_b9ad4580",
+      "revId": "99241983fb169b96658e6ba830b435abb333129d",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
     },
     {
       "key": {
@@ -53,6 +89,24 @@
     },
     {
       "key": {
+        "uuid": "33198c85_84e02bfa",
+        "filename": "rules.py",
+        "patchSetId": 6
+      },
+      "lineNbr": 1572,
+      "author": {
+        "id": 79
+      },
+      "writtenOn": "2019-07-17T04:57:02Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "37845510_d4f717fd",
+      "revId": "99241983fb169b96658e6ba830b435abb333129d",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "3db4e5ff_215e67ca",
         "filename": "rules.py",
         "patchSetId": 6
@@ -70,6 +124,24 @@
     },
     {
       "key": {
+        "uuid": "4f165333_7e0da6fd",
+        "filename": "rules.py",
+        "patchSetId": 6
+      },
+      "lineNbr": 1581,
+      "author": {
+        "id": 79
+      },
+      "writtenOn": "2019-07-17T04:57:02Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "3db4e5ff_215e67ca",
+      "revId": "99241983fb169b96658e6ba830b435abb333129d",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "40b07b0e_e5230a04",
         "filename": "rules.py",
         "patchSetId": 6
@@ -84,6 +156,24 @@
       "revId": "99241983fb169b96658e6ba830b435abb333129d",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "5a79ad41_a01cddbe",
+        "filename": "rules.py",
+        "patchSetId": 6
+      },
+      "lineNbr": 1582,
+      "author": {
+        "id": 79
+      },
+      "writtenOn": "2019-07-17T04:57:02Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "40b07b0e_e5230a04",
+      "revId": "99241983fb169b96658e6ba830b435abb333129d",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
     }
   ]
 }
