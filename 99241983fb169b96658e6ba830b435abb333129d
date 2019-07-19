@@ -37,6 +37,24 @@
     },
     {
       "key": {
+        "uuid": "595ddd75_058faa27",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 6
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 5
+      },
+      "writtenOn": "2019-07-19T02:33:31Z",
+      "side": 1,
+      "message": "that is not required in the commit log. please add any comments wrt patch-set into gerrit, not into gitlog",
+      "parentUuid": "f3ca2232_30c74b04",
+      "revId": "99241983fb169b96658e6ba830b435abb333129d",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "6e551130_b9ad4580",
         "filename": "rules.py",
         "patchSetId": 6
