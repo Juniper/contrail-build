@@ -1547,14 +1547,13 @@ def DescribeAliases():
     for alias in sorted(Alias.default_ans.keys()):
         print(alias)
 
-def GoSetupCommon(env, goCommand='', changeWorkingDir=True):
+def GoSetupCommon(env, goCommand='', changeWorkingDir=True, workingDir=None):
     print ("Running : ", goCommand)
     if not env.Detect('go'):
         raise SCons.Errors.StopError('No go command detected on system')
 
     if goCommand != '':
         args = shlex.split(goCommand)
-        workingDir = None
         if changeWorkingDir == False:
             workingDir = None
         popen_env = env['ENV']
@@ -1570,15 +1569,15 @@ def GoSetupCommon(env, goCommand='', changeWorkingDir=True):
             if process.returncode != 0:
                 raise SCons.Errors.StopError( goCommand + ' failed')
         except Exception as e:
-            raise SCons.Errors.StopError( goCommand + ' got exception')
+            raise SCons.Errors.StopError( goCommand + ' got exception' + str(e))
 
 def GoBuilder(target, source, env):
     gobuild_cmd = 'go build -o ' + str(target) + ' ' + str(source)
     go_working_dir = GoSetupCommon(env, gobuild_cmd, False)
 
 def GoTester(test_dir, env):
-    gotest_cmd = 'cd ' + str(test_dir) + ' && go test -v '
-    go_working_dir = GoSetupCommon(env, gotest_cmd, False)
+    gotest_cmd =  'go test -v '
+    go_working_dir = GoSetupCommon(env, gotest_cmd, True, str(test_dir))
 
 def GoBuildFunc(env, source, target):
     source_path = env.Dir('#/' + env.Dir('.').srcnode().path).abspath + \
