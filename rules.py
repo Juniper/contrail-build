@@ -1571,7 +1571,7 @@ def GoSetupCommon(env, goCommand='', changeWorkingDir=True, workingDir=None):
             raise SCons.Errors.StopError( goCommand + ' got exception' + str(e))
 
 def GoBuilder(target, source, env):
-    gobuild_cmd = 'go build -o ' + str(target) + ' ' + str(source)
+    gobuild_cmd = 'go build -buildmode=c-shared -o ' + str(target) + ' ' + str(source)
     go_working_dir = GoSetupCommon(env, gobuild_cmd, False)
 
 def GoTester(test_dir, env):
