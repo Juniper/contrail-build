@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "3e09069b_e987feca",
+        "filename": "rules.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 1574,
+      "author": {
+        "id": 782
+      },
+      "writtenOn": "2019-08-09T04:18:39Z",
+      "side": 1,
+      "message": "what is that ldflag? i was expecting to see key\u003dvalue?",
+      "revId": "8f648f551e14b7d5743de19fae90348fd9ba21bf",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
