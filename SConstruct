@@ -14,10 +14,7 @@ import rules
 conf = Configure(DefaultEnvironment(ENV = os.environ))
 env = rules.SetupBuildEnvironment(conf)
 
-if sys.platform.startswith('win'):
-    SConscript(dirs=['windows', 'src/contrail-common', 'controller', 'vrouter'])
-else:
-    SConscript(dirs=['src/contrail-common', 'controller', 'vrouter'])
+SConscript(dirs=['src/contrail-common', 'controller', 'vrouter'])
 
 
 
