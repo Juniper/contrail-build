@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "664582ae_abd93595",
+        "filename": "rules.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 1539,
+      "author": {
+        "id": 213
+      },
+      "writtenOn": "2019-09-30T10:26:27Z",
+      "side": 1,
+      "message": "Nit: double braces",
+      "range": {
+        "startLine": 1539,
+        "startChar": 14,
+        "endLine": 1539,
+        "endChar": 16
+      },
+      "revId": "a859b8e3b0b2a564696202097c997c79a72e0b9d",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
