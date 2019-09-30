@@ -135,19 +135,19 @@ def RunUnitTest(env, target, source, timeout = 300):
     if code is None:
         proc.kill()
         logfile.write('[  TIMEOUT  ] ')
-        print(test + '\033[91m' + " TIMEOUT" + '\033[0m')
+        print((test + '\033[91m' + " TIMEOUT" + '\033[0m'))
         raise convert_to_BuildError(code)
         return
 
     if code == 0:
-        print(test + '\033[94m' + " PASS" + '\033[0m')
+        print((test + '\033[94m' + " PASS" + '\033[0m'))
     else:
         logfile.write('[  FAILED  ] ')
         if code < 0:
             logfile.write('Terminated by signal: ' + str(-code) + '\n')
         else:
             logfile.write('Program returned ' + str(code) + '\n')
-        print(test + '\033[91m' + " FAIL" + '\033[0m')
+        print((test + '\033[91m' + " FAIL" + '\033[0m'))
         raise convert_to_BuildError(code)
 
 def TestSuite(env, target, source):
@@ -324,9 +324,10 @@ def venv_add_pip_pkg(env, v, pkg_list):
     pip = "/bin/bash -c \"source %s/bin/activate 2>/dev/null; pip" % venv._path
     download_cache = ""
     if sys.platform != 'win32':
+        #import pdb; pdb.set_trace()
         pip_version = subprocess.check_output(
             "%s --version | awk '{print \$2}'\"" % pip, shell=True).rstrip()
-        if pip_version < LooseVersion("6.0"):
+        if pip_version.decode('utf-8') < LooseVersion("6.0"):
             tdir = '/tmp/cache/%s/systemless_test' % getpass.getuser()
             download_cache = "--download-cache=%s" % (tdir)
 
@@ -370,7 +371,7 @@ def UnitTest(env, name, sources, **kwargs):
 
     # Do not link with tcmalloc when running under valgrind/coverage env.
     if sys.platform not in ['darwin', 'win32'] and env.get('OPT') != 'coverage' and \
-           not env['ENV'].has_key('NO_HEAPCHECK') and env.get('OPT') != 'valgrind':
+           'NO_HEAPCHECK' not in env['ENV'] and env.get('OPT') != 'valgrind':
         test_env.Append(LIBPATH = '#/build/lib')
         test_env.Append(LIBS = ['tcmalloc'])
     test_exe_list = test_env.Program(name, sources)
@@ -604,7 +605,7 @@ def ProtocGenDescFunc(env, file):
     ProtocSconsEnvDescFunc(env)
     suffixes = ['.desc']
     basename = Basename(file)
-    targets = map(lambda suffix: basename + suffix, suffixes)
+    targets = [basename + suffix for suffix in suffixes]
     return env.ProtocDesc(targets, file)
 
 # ProtocCpp Methods
@@ -646,7 +647,7 @@ def ProtocGenCppMapTgtDirFunc(env, file, target_root = ''):
                 '.pb.cc'
                ]
     basename = Basename(file)
-    targets = map(lambda suffix: basename + suffix, suffixes)
+    targets = [basename + suffix for suffix in suffixes]
     return env.ProtocCpp(targets, file)
 
 def ProtocGenCppFunc(env, file):
@@ -672,7 +673,7 @@ def wait_for_sandesh_install(env):
             except Exception as e:
                 rc = 0
         if (rc != 1):
-            print('scons: warning: sandesh -version returned %d, retrying' % rc)
+            print(('scons: warning: sandesh -version returned %d, retrying' % rc))
             time.sleep(1)
 
 class SandeshWarning(SCons.Warnings.Warning):
@@ -763,7 +764,7 @@ def SandeshGenOnlyCppFunc(env, file, extra_suffixes=[]):
         '_html.cpp']
 
     if extra_suffixes:
-        if isinstance(extra_suffixes, basestring):
+        if isinstance(extra_suffixes, str):
             extra_suffixes = [ extra_suffixes ]
         suffixes += extra_suffixes
 
@@ -820,7 +821,7 @@ def SandeshGenCppFunc(env, file, extra_suffixes=[]):
         '_html.cpp']
 
     if extra_suffixes:
-        if isinstance(extra_suffixes, basestring):
+        if isinstance(extra_suffixes, str):
             extra_suffixes = [ extra_suffixes ]
         suffixes += extra_suffixes
 
@@ -907,7 +908,7 @@ def GoCniFunc(env, filepath, target=''):
         cmd += go_cmd + 'install'
         code = subprocess.call(cmd, shell=True, env=goenv)
     except Exception as e:
-        print(str(e))
+        print((str(e)))
     return env['TOP'] + '/container/cni/bin/' + filepath
 
 # ThriftGenCpp Methods
@@ -930,10 +931,10 @@ def ThriftGenCppFunc(env, file, asynch):
     ThriftSconsEnvFunc(env, asynch)
     suffixes = ['_types.h', '_constants.h', '_types.cpp', '_constants.cpp']
     basename = Basename(file)
-    base_files = map(lambda s: 'gen-cpp/' + basename + s, suffixes)
+    base_files = ['gen-cpp/' + basename + s for s in suffixes]
     services = ThriftServicesFunc(env.File(file))
-    service_cfiles = map(lambda s: 'gen-cpp/' + s + '.cpp', services)
-    service_hfiles = map(lambda s: 'gen-cpp/' + s + '.h', services)
+    service_cfiles = ['gen-cpp/' + s + '.cpp' for s in services]
+    service_hfiles = ['gen-cpp/' + s + '.h' for s in services]
     targets = base_files + service_cfiles + service_hfiles
     env.Depends(targets, '#build/bin/thrift' + env['PROGSUFFIX'])
     return env.ThriftCpp(targets, file)
@@ -960,7 +961,7 @@ def ThriftGenPyFunc(env, path, target=''):
         mod_dir = path_split[0] + '/'
     if target[-1] != '/':
         target += '/'
-    targets = map(lambda module: target + 'gen_py/' + mod_dir + module, modules)
+    targets = [target + 'gen_py/' + mod_dir + module for module in modules]
     env.Depends(targets, '#build/bin/thrift' + env['PROGSUFFIX'])
     return env.ThriftPy(targets, path)
 
@@ -988,7 +989,7 @@ def DeviceAPIBuilderCmd(source, target, env, for_signature):
 def DeviceAPITargetGen(target, source, env):
     suffixes = []
     basename = Basename(source[0].abspath)
-    targets = map(lambda x: basename + x, suffixes)
+    targets = [basename + x for x in suffixes]
     return targets, source
 
 def CreateDeviceAPIBuilder(env):
@@ -1019,15 +1020,15 @@ def CheckBuildConfiguration(conf):
     if ((opt_level == 'production' or opt_level == 'profile') and \
         (conf.env['CC'].endswith("gcc") or conf.env['CC'].endswith("g++"))):
         if conf.env['CCVERSION'] == "4.7.0":
-            print("Unsupported/Buggy compiler gcc 4.7.0 for building " + \
-                  "optimized binaries")
+            print(("Unsupported/Buggy compiler gcc 4.7.0 for building " + \
+                  "optimized binaries"))
             raise convert_to_BuildError(1)
     # Specific versions of MS C++ compiler are not supported for
     # "production" build.
     if opt_level == 'production' and conf.env['CC'] == 'cl':
         if not VerifyClVersion():
-            print("Unsupported MS C++ compiler for building " +
-                  "optimized binaries")
+            print(("Unsupported MS C++ compiler for building " +
+                  "optimized binaries"))
             raise convert_to_BuildError(1)
     return conf.Finish()
 
@@ -1203,7 +1204,7 @@ def determine_job_value():
     (one,five,_) = os.getloadavg()
     avg_load = int(one + five / 2)
     avail = (ncore - avg_load) * 3 / 2
-    print("scons: available jobs = %d" % avail)
+    print(("scons: available jobs = %d" % avail))
     return avail
 
 class UnitTestsCollector(object):
@@ -1261,7 +1262,7 @@ def SetupBuildEnvironment(conf):
         # assume 1 means -j not specified).
         nj = determine_job_value()
         if nj > 1:
-            print("scons: setting jobs (-j) to %d" % nj)
+            print(("scons: setting jobs (-j) to %d" % nj))
             SetOption('num_jobs', nj)
             env['NUM_JOBS'] = nj
 
@@ -1535,11 +1536,11 @@ def DescribeTests(env, targets):
             node_paths.remove(path)
 
     for test in matched_tests:
-        print(json.dumps(test))
+        print((json.dumps(test)))
 
     for node_path in node_paths:
         dangling_node = {"node_path": node_path, "matched": False}
-        print(json.dumps(dangling_node))
+        print((json.dumps(dangling_node)))
 
 def DescribeAliases():
     print('Available Build Aliases:')
