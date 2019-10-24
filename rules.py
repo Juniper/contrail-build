@@ -1247,6 +1247,10 @@ def SetupBuildEnvironment(conf):
               action='store_true', default=False)
     AddOption('--describe-aliases', dest = 'describe-aliases',
               action='store_true', default=False)
+    AddOption('--c++', '--cpp', '--std', dest = 'cpp_standard',
+              action='store', default='',
+              choices = ['c++98', 'c++11', 'c++14', 'c++17', 'c++2a'],
+              help='C++ standard[c++98, c++11, c++14, c++17, c++2a]')
 
     env = CheckBuildConfiguration(conf)
 
@@ -1279,6 +1283,7 @@ def SetupBuildEnvironment(conf):
     env['INSTALL_EXAMPLE'] = ''
     env['PYTHON_INSTALL_OPT'] = ''
     env['INSTALL_DOC'] = ''
+    env['CPP_STANDARD'] = GetOption('cpp_standard')
 
     install_root = GetOption('install_root')
     if install_root:
@@ -1377,6 +1382,11 @@ def SetupBuildEnvironment(conf):
         (path,repo) = l.split(" : ")
         repo_list[path] = repo
     env['REPO_PROJECTS'] = repo_list
+
+    if env['CPP_STANDARD']:
+        stdoption = '-std=' + env['CPP_STANDARD']
+        env.Append(CXXFLAGS = stdoption)
+        env.Append(CXXFLAGS = '-Wno-deprecated')
 
     opt_level = env['OPT']
     if opt_level == 'production':
