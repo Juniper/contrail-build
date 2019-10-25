@@ -16,6 +16,24 @@
       "revId": "8cc79873fb9fd2510b5e690ba9cef6657582db6e",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "926133ee_43227c95",
+        "filename": "rules.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 1253,
+      "author": {
+        "id": 299
+      },
+      "writtenOn": "2019-10-25T18:39:11Z",
+      "side": 1,
+      "message": "removed default",
+      "parentUuid": "0947ebd3_c6db0532",
+      "revId": "8cc79873fb9fd2510b5e690ba9cef6657582db6e",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
     }
   ]
 }
