@@ -1248,7 +1248,7 @@ def SetupBuildEnvironment(conf):
     AddOption('--describe-aliases', dest = 'describe-aliases',
               action='store_true', default=False)
     AddOption('--c++', '--cpp', '--std', dest = 'cpp_standard',
-              action='store', default='',
+              action='store', default='c++11',
               choices = ['c++98', 'c++11', 'c++14', 'c++17', 'c++2a'],
               help='C++ standard[c++98, c++11, c++14, c++17, c++2a]')
 
