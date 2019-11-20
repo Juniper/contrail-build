@@ -1386,7 +1386,9 @@ def SetupBuildEnvironment(conf):
     if env['CPP_STANDARD']:
         stdoption = '-std=' + env['CPP_STANDARD']
         env.Append(CXXFLAGS = stdoption)
-        env.Append(CXXFLAGS = '-Wno-deprecated')
+        if env['CPP_STANDARD'] == 'c++11':
+            env.Append(CXXFLAGS = '-Wno-deprecated')
+            env.Append(CXXFLAGS = '-DBOOST_NO_CXX11_SCOPED_ENUMS')
 
     opt_level = env['OPT']
     if opt_level == 'production':
