@@ -282,7 +282,7 @@ def SetupPyTestSuite(env, sdist_target, *args, **kwargs):
     env.SetupPyTestSuiteWithDeps(sdist_target,
                                  sdist_depends=sdist_depends, **kwargs)
 
-def setup_venv(env, target, venv_name, path=None):
+def setup_venv(env, target, venv_name, path=None, is_py3=False):
     p = path
     if not p:
         ws_link = os.environ.get('CONTRAIL_REPO')
@@ -300,6 +300,11 @@ def setup_venv(env, target, venv_name, path=None):
         '[ -f testroot/bin/redis-server ] || ( cd ../redis-2.6.13 && make PREFIX=%s/testroot install)' % p,
         'virtualenv %s',
     ])
+
+    # Create python3 virtualenv
+    if is_py3:
+        shell_cmd += ' --python=python3'
+
     for t, v in zip(target, venv_name):
         cmd = env.Command (v, '', shell_cmd % (v,))
         env.Alias (t, cmd)
