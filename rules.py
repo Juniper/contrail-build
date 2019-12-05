@@ -101,20 +101,15 @@ def RunUnitTest(env, target, source, timeout = 300):
                   'TOP_OBJECT_PATH': env['TOP'][1:]})
 
     ShEnv.update(GetTestEnvironment(test))
-    # Use gprof unless NO_HEAPCHECK is set or in CentOS or in Windows
+    # Use gprof unless NO_HEAPCHECK is set or in CentOS
     heap_check = 'NO_HEAPCHECK' not in ShEnv
     if heap_check:
-        if platform.system() == 'Windows':
+        try:
+            # Skip HEAPCHECK in CentOS 6.4
+            subprocess.check_call("grep -q \"CentOS release 6.4\" /etc/issue 2>/dev/null", shell=True)
             heap_check = False
-        else:
-            try:
-                # Skip HEAPCHECK in CentOS 6.4
-                subprocess.check_call("grep -q \"CentOS release 6.4\" /etc/issue 2>/dev/null", shell=True)
-                heap_check = False
-            except:
-                pass
-
-    if heap_check:
+        except:
+            pass
         ShEnv['HEAPCHECK'] = 'normal'
         ShEnv['PPROF_PATH'] = 'build/bin/pprof'
         # Fix for frequent crash in gperftools ListerThread during exit
@@ -791,13 +786,7 @@ def SandeshCppBuilder(target, source, env):
     with open(cname, 'w') as cfile:
         cfile.write('namespace {\n')
 
-    # If one passes file to `stdout` kwarg to subprocess.call on Windows, it gets fileno from this
-    # file, then handle for that fileno and forwards stdout to that handle, which means it bypasses
-    # Python's internal buffer and sometimes writes before our previous call to `write` method.
-    # Besides, probably due to some bug in subprocess on Windows, it opens handles to other files in
-    # that folder (checked with handle64 from Windows Sysinternals) so it sometimes breaks
-    # multithreaded builds when it opens a handle to file used by another thread. For that reason we
-    # can't use `stdout` kwarg here. If there's a need to get rid of shell redirection, one should
+    # If there's a need to get rid of shell redirection, one should
     # get rid of calling xxd at all - this feature should be done in native Python code.
     subprocess.call('xxd -i ' + hname + ' >> ' + os.path.basename(cname), shell=True, cwd=opath)
     with open(cname, 'a') as cfile:
