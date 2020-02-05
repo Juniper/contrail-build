@@ -1259,14 +1259,11 @@ def SetupBuildEnvironment(conf):
 
     # Let's decide how many jobs (-jNN) we should use.
     nj = GetOption('num_jobs')
-    if nj == 1:
-        # Should probably check for CLI over-ride of -j1 (i.e., do not
-        # assume 1 means -j not specified).
-        nj = determine_job_value()
-        if nj > 1:
-            print("scons: setting jobs (-j) to %d" % nj)
-            SetOption('num_jobs', nj)
-            env['NUM_JOBS'] = nj
+    print("scons: setting jobs (-j) to %d" % nj)
+
+    nj = 1
+    env['NUM_JOBS'] = nj
+    SetOption('num_jobs', nj)
 
     env['OPT'] = GetOption('opt')
     env['TARGET_MACHINE'] = GetOption('target')
