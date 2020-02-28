@@ -1533,21 +1533,25 @@ def GoSetupCommon(env, goCommand='', changeWorkingDir=True, workingDir=None):
         except Exception as e:
             raise SCons.Errors.StopError( goCommand + ' got exception' + str(e))
 
-def GoBuilder(target, source, env):
+def GoBuilder(env, target, source, source_dir):
     gobuild_cmd = "go build -a -ldflags \"-B 0x767ec1a0fea882d05faf39b84c29ea9878808f1d\" -o " + str(target) + " " + str(source)
-    go_working_dir = GoSetupCommon(env, gobuild_cmd, False)
+    go_working_dir = GoSetupCommon(env, gobuild_cmd, True, source_dir)
 
 def GoTester(test_dir, env):
     gotest_cmd =  'go test -v '
     go_working_dir = GoSetupCommon(env, gotest_cmd, True, str(test_dir))
 
-def GoBuildFunc(env, source, target):
-    source_path = env.Dir('#/' + env.Dir('.').srcnode().path).abspath + \
-                          '/' + source
+def GoBuildFunc(env, source, target, target_name=None):
+    source_dir = env.Dir('#/' + env.Dir('.').srcnode().path).abspath
+    source_path = source_dir + '/' + source
     target_path = env.Dir(env['TOP']).abspath + '/' + target
     MkdirP(target_path)
-    target_file  = target_path  + '/' + target
-    GoBuilder(target_file, source_path,  env)
+    if target_name:
+        target_file  = target_path  + '/' + target_name
+    else:
+        target_file  = target_path  + '/' + target
+
+    GoBuilder(env, target_file, source_path, source_dir)
     return
 
 def GoTestFunc(env, source_dir, target=''):
