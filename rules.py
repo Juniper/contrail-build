@@ -1440,6 +1440,7 @@ def SetupBuildEnvironment(conf):
     env.AddMethod(SandeshGenDocFunc, "SandeshGenDoc")
     env.AddMethod(GoCniFunc, "GoCniBuild")
     env.AddMethod(GoBuildFunc, "GoBuild")
+    env.AddMethod(GoModFunc, "GoMod")
     env.AddMethod(GoTestFunc, "GoTest")
     env.AddMethod(ThriftGenCppFunc, "ThriftGenCpp")
     ThriftSconsEnvPyFunc(env)
@@ -1510,49 +1511,122 @@ def DescribeAliases():
     for alias in sorted(Alias.default_ans.keys()):
         print(alias)
 
-def GoSetupCommon(env, goCommand='', changeWorkingDir=True, workingDir=None):
+def GoSetupCommon(env, goCommand='', changeWorkingDir=True,
+                  workingDir=None, retries=1, log_file=None):
     if not env.Detect('go'):
         raise SCons.Errors.StopError('No go command detected on system')
 
     if goCommand != '':
         args = shlex.split(goCommand)
-        if changeWorkingDir == False:
+        if not changeWorkingDir:
             workingDir = None
         popen_env = env['ENV']
         popen_env['GOROOT'] = env.Dir('#/third_party/go').abspath
         popen_env['GOPATH'] = env.Dir('#/controller').abspath
-        try:
-            process = subprocess.Popen(args,
-                                       cwd=workingDir,
-                                       stdout=subprocess.PIPE,
-                                       stdin=subprocess.PIPE,
-                                       env=popen_env)
-            out, err = process.communicate()
-            if process.returncode != 0:
-                raise SCons.Errors.StopError( goCommand + ' failed')
-        except Exception as e:
-            raise SCons.Errors.StopError( goCommand + ' got exception' + str(e))
+        while retries:
+            retries -= 1
+            try:
+                process = subprocess.Popen(args,
+                                           cwd=workingDir,
+                                           stdout=subprocess.PIPE,
+                                           stderr=subprocess.PIPE,
+                                           stdin=subprocess.PIPE,
+                                           env=popen_env)
+                # Write stderr to stdout and file as soon as it is available
+                if log_file:
+                    with open(log_file, "a+") as fd:
+                        for line in process.stderr:
+                            sys.stdout.write(line)
+                            fd.write(line)
+                else:
+                    for line in process.stderr:
+                        sys.stdout.write(line)
+                process.wait()
+                out = "\n".join(process.stdout.readlines())
+                if log_file:
+                    with open(log_file, "a+") as fd:
+                        fd.write(out)
+                if process.returncode != 0:
+                    if not retries:
+                        print(out)
+                        raise SCons.Errors.StopError(goCommand + ' failed')
+            except Exception as e:
+                raise SCons.Errors.StopError(
+                    goCommand + ' got exception' + str(e))
+    return out
+
+
+def GoModule(target, source, env):
+    gomod_cmd = "go mod " + env['GOMOD_SUBCMD']
+    source_dir = env.Dir(str(source[0]).rsplit('/', 1)[0] + "/").abspath
+    GoSetupCommon(
+        env,
+        gomod_cmd,
+        True,
+        source_dir,
+        retries=env['GOMOD_RETRIES'],
+        log_file=str(
+            target[0].abspath))
+
+
+def GoSconsEnvModFunc(env):
+    gomod = Builder(action=GoModule)
+    env.Append(BUILDERS={'GoSconsMod': gomod})
+
+
+def GoModFunc(env, source, target, sub_cmd='tidy', retries=1):
+    env['GOMOD_SUBCMD'] = sub_cmd
+    env['GOMOD_RETRIES'] = retries
+    GoSconsEnvModFunc(env)
+    return env.GoSconsMod(target, source)
+
 
 def GoBuilder(target, source, env):
-    gobuild_cmd = "go build -a -ldflags \"-B 0x767ec1a0fea882d05faf39b84c29ea9878808f1d\" -o " + str(target) + " " + str(source)
-    go_working_dir = GoSetupCommon(env, gobuild_cmd, False)
+    gobuild_cmd = "go build -a -ldflags \"-B 0x767ec1a0fea882d05faf39b84c29ea9878808f1d\" -o " + \
+        str(target[0].abspath) + " " + str(source[0].abspath)
+    source_dir = env.Dir(str(source[0]).rsplit('/', 1)[0] + "/").abspath
+    GoSetupCommon(env, gobuild_cmd, True, source_dir)
 
-def GoTester(test_dir, env):
-    gotest_cmd =  'go test -v '
-    go_working_dir = GoSetupCommon(env, gotest_cmd, True, str(test_dir))
+
+def GoSconsEnvBuildFunc(env):
+    gobuild = Builder(action=GoBuilder)
+    env.Append(BUILDERS={'GoSconsBuild': gobuild})
+
 
 def GoBuildFunc(env, source, target):
-    source_path = env.Dir('#/' + env.Dir('.').srcnode().path).abspath + \
-                          '/' + source
-    target_path = env.Dir(env['TOP']).abspath + '/' + target
+    GoSconsEnvBuildFunc(env)
+    target_path = env.Dir(str(target).rsplit('/', 1)[0] + "/").abspath
     MkdirP(target_path)
-    target_file  = target_path  + '/' + target
-    GoBuilder(target_file, source_path,  env)
-    return
+    return env.GoSconsBuild(target, source)
 
-def GoTestFunc(env, source_dir, target=''):
-    GoTester(source_dir, env)
-    return
+
+def GoListTestDirs(env):
+    """Lists directories that contain _test.go files
+       either inside Go package (.TestGoFiles) or
+       outside Go package (.XTestGoFiles, e.g. in "foo_test" package)
+    """
+    golist_cmd = "go list -f '{{if (or .TestGoFiles .XTestGoFiles)}}{{.Dir}}{{end}}' ./..."
+    test_dirs = GoSetupCommon(env, golist_cmd, True, env['GO_TEST_ROOT'])
+    return " ".join(test_dirs.split("\n"))
+
+
+def GoTester(target, source, env):
+    test_root = env['GO_TEST_ROOT']
+    gotest_cmd = 'go test -v %s' % GoListTestDirs(env)
+    GoSetupCommon(env, gotest_cmd, True, str(test_root),
+                  log_file=str(target[0].abspath))
+
+
+def GoSconsEnvTestFunc(env):
+    gotest = Builder(action=GoTester)
+    env.Append(BUILDERS={'GoSconsTest': gotest})
+
+
+def GoTestFunc(env, target, test_root):
+    env['GO_TEST_ROOT'] = test_root
+    GoSconsEnvTestFunc(env)
+    return env.GoSconsTest(target, None)
+
 
 def MkdirP(path):
     try:
@@ -1562,4 +1636,3 @@ def MkdirP(path):
             pass
         else:
             raise
-
