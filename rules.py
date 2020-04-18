@@ -890,7 +890,7 @@ def SandeshGenPyFunc(env, path, target='', gen_py=True):
 def GoCniFunc(env, filepath, target=''):
     # get dependencies
     goenv = os.environ.copy()
-    goenv['GOROOT'] = env.Dir('#/third_party/go').abspath
+    goenv['GOROOT'] = env.Dir('#/third_party/go1.12.7').abspath
     goenv['GOPATH'] = env.Dir('#/third_party/cni_go_deps').abspath
     goenv['GOBIN'] = env.Dir(env['TOP'] + '/container/cni/bin').abspath
     cni_path = env.Dir('#/' + env.Dir('.').srcnode().path).abspath
@@ -1523,7 +1523,7 @@ def GoSetupCommon(env, goCommand='', changeWorkingDir=True,
         if not changeWorkingDir:
             workingDir = None
         popen_env = env['ENV']
-        popen_env['GOROOT'] = env.Dir('#/third_party/go').abspath
+        popen_env['GOROOT'] = env.Dir('#/third_party/go1.12.7').abspath
         popen_env['GOPATH'] = env.Dir('#/controller').abspath
         max_tries = retries
         while retries:
